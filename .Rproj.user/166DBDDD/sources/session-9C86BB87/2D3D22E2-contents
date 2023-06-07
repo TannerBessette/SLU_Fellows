@@ -1,0 +1,1253 @@
+---
+title: "Tidy Models - Ch. 6 ISLR2"
+format: html
+---
+
+Following along with code from Chapter 6 of ISLR 2.
+
+Loading in necessary packages:
+```{r}
+install.packages("tidymodels")
+install.packages("broom")
+install.packages("gt")
+install.packages("patchwork")
+install.packages("tictoc")
+```
+
+```{r}
+install.packages("leaps")
+library(leaps)
+```
+
+```{r}
+install.packages("dunnr")
+```
+
+```{r}
+install.packages("glmnet")
+```
+
+```{r}
+library(glmnet)
+```
+
+```{r}
+library(ISLR2)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(broom)
+library(gt)
+library(patchwork)
+library(tictoc)
+
+# Load my R package and set the ggplot theme
+library(dunnr)
+extrafont::loadfonts(device = "win", quiet = TRUE)
+theme_set(theme_td())
+set_geom_fonts()
+set_palette()
+```
+
+
+
+6.1.1 Best Subset Selection (this section does not use tidymodels)
+```{r}
+credit <- ISLR2::Credit
+glimpse(credit)
+```
+
+```{r}
+credit_predictors <- names(credit)
+credit_predictors <- credit_predictors[credit_predictors != "Balance"]
+
+credit_model_subsets <- tibble(
+  n_preds = 1:10,
+  predictors = map(n_preds,
+                   ~ utils::combn(credit_predictors, .x, simplify = FALSE))
+) %>%
+  unnest(predictors) %>%
+  mutate(
+    model_formula = map(predictors,
+                        ~ as.formula(paste("Balance ~", paste(.x, collapse = "+"))))
+  )
+
+glimpse(credit_model_subsets)
+```
+
+```{r}
+credit_model_subsets %>%
+  count(n_preds) %>%
+  mutate(p_choose_k = choose(10, n_preds))
+```
+
+```{r}
+credit_model_subsets <- credit_model_subsets %>%
+  mutate(
+    model_fit = map(model_formula, ~ lm(.x, data = credit)),
+    RSS = map_dbl(model_fit, ~ sum(.x$residuals^2)),
+    R2 = map_dbl(model_fit, ~ summary(.x)$r.squared),
+    # Because of one of the categorical variables (Region) having three levels,
+    # some models will have +1 dummy variable predictor, which I can calculate
+    # from the number of coefficients returned from the fit
+    n_preds_adj = map_int(model_fit, ~ length(.x$coefficients) - 1L)
+  )
+```
+
+Figure 6.1:
+(code doesn't work because td_colors not defined)
+```{r}
+credit_model_subsets %>%
+  pivot_longer(cols = c(RSS, R2), names_to = "metric", values_to = "value") %>%
+  mutate(metric = factor(metric, levels = c("RSS", "R2"))) %>%
+  group_by(n_preds_adj, metric) %>%
+  mutate(
+    # The "best" model has the lowest value by RSS...
+    best_model = (metric == "RSS" & value == min(value)) |
+      # ... and the highest value by R2
+      (metric == "R2" & value == max(value))
+  ) %>%
+  ungroup() %>%
+  ggplot(aes(x = n_preds_adj, y = value)) +
+  geom_line(data = . %>% filter(best_model), color = "red", size = 1) +
+  geom_jitter(width = 0.05, height = 0, alpha = 0.3,
+              color = td_colors$nice$opera_mauve) +
+  facet_wrap(~ metric, ncol = 2, scales = "free_y") +
+  scale_x_continuous("Number of predictors", breaks = seq(2, 10, 2))
+```
+This method can become computationally expensive; next section is 
+computationally efficient alternatives.
+
+
+
+
+6.1.2: Stepwise Selection
+Forward Stepwise Selection: 
+(adds predictors one at a time until all are in model)
+```{r}
+# Model with no predictors
+balance_null <- lm(Balance ~ 1, data = credit)
+# Model with all predictors
+balance_full <- lm(Balance ~ ., data = credit)
+
+MASS::addterm(balance_null, scope = balance_full, sorted = TRUE)
+```
+
+```{r}
+balance_preds <- c("1")
+for (forward_step in 1:4) {
+  balance_formula <- as.formula(
+    paste("Balance ~", str_replace_all(balance_preds[forward_step], ",", "+"))
+  )
+  balance_model <- lm(balance_formula, data = credit)
+  
+  # Find the next predictor by RSS
+  new_predictor <- MASS::addterm(balance_model, scope = balance_full) %>%
+    #broom::tidy() %>%
+    as_tibble(rownames = "term") %>%
+    filter(RSS == min(RSS)) %>%
+    pull(term)
+  
+  balance_preds <- append(balance_preds,
+                          paste(balance_preds[forward_step], new_predictor,
+                                sep = ", "))
+}
+balance_preds
+```
+
+```{r}
+bind_cols(
+  credit_model_subsets %>%
+    filter(n_preds_adj <= 4) %>%
+    group_by(n_preds_adj) %>%
+    filter(RSS == min(RSS)) %>%
+    ungroup() %>%
+    transmute(
+      `# variables` = n_preds_adj,
+      `Best subset` = map_chr(predictors, str_c, collapse = ", ")
+    ),
+  `Forward stepwise` = balance_preds[2:5] %>% str_remove("1, ")
+) %>%
+  gt(rowname_col = "# variables")
+```
+
+Backwards Stepwise Selection:
+(begins with the full model containing all p predictors, and then iteratively 
+removes the least useful predictor.)
+("best" is defined as having smallest RSS or highest R^2)
+Use cross-validated prediction error, adj R^2, AIC, or BIC to choose the best
+model.
+
+
+
+6.1.3: Choosing the "Best" Model:
+-the cross-validated prediction error statistic adds a penalty of 2dσ^2 to the 
+training RSS in order to adjust for the fact that the training error tends to 
+underestimate the test error.
+
+```{r}
+# Get the estimated variance of the error for calculating C_p
+sigma_hat <- summary(balance_full)$sigma
+credit_model_best <- credit_model_subsets %>%
+  group_by(n_preds_adj) %>%
+  filter(RSS == min(RSS)) %>%
+  ungroup() %>%
+  mutate(
+    `C_p` = (1 / nrow(credit)) * (RSS + 2 * n_preds_adj * sigma_hat^2)
+  )
+```
+
+BIC:
+```{r}
+credit_model_best <- credit_model_best %>%
+  mutate(
+    BIC = (1 / nrow(credit)) *
+      (RSS + log(nrow(credit)) * n_preds_adj * sigma_hat^2)
+  )
+credit_model_best
+```
+
+-in theory, the model with the largest adjusted R^2 will have only correct 
+variables and no noise variables. Pays a price for inclusion of unnecessary 
+variables unlike R^2.
+
+Ajd R^2:
+```{r}
+credit_model_best <- credit_model_best %>%
+  mutate(
+    `Adjusted R2` = map_dbl(model_fit, ~ summary(.x)$adj.r.squared)
+  )
+```
+
+Figure 6.2
+(doesn't work becuase of same td_colors issue)
+```{r}
+credit_model_best %>%
+  pivot_longer(cols = c("C_p", "BIC", "Adjusted R2"),
+               names_to = "metric", values_to = "value") %>%
+  group_by(metric) %>%
+  mutate(
+    best_model = ifelse(metric == "Adjusted R2",
+                        value == max(value),
+                        value == min(value))
+  ) %>%
+  ungroup() %>%
+  mutate(metric = factor(metric, levels = c("C_p", "BIC", "Adjusted R2"))) %>%
+  filter(n_preds_adj >= 2) %>%
+  ggplot(aes(x = n_preds_adj, y = value)) +
+  geom_point(color = td_colors$nice$spanish_blue) +
+  geom_line(color = td_colors$nice$opera_mauve) +
+  geom_point(data = . %>% filter(best_model), size = 5, shape = 4,
+             color = td_colors$nice$spanish_blue) +
+  facet_wrap(~ metric, nrow = 1, scales = "free_y") +
+  scale_x_continuous("Number of predictors", breaks = seq(2, 10, 2))
+```
+
+
+Validation and Cross-Validation:
+Recreating figure 6.3 using tidy_models approach with rsample
+```{r}
+set.seed(499)
+tic()
+credit_model_best <- credit_model_best %>%
+  mutate(
+    validation_set_error = map(
+      model_formula,
+      function(model_formula) {
+        workflow() %>%
+          add_model(linear_reg()) %>%
+          add_recipe(recipe(model_formula, credit)) %>%
+          fit_resamples(validation_split(credit, prop = 0.75)) %>%
+          collect_metrics() %>%
+          filter(.metric == "rmse") %>%
+          select(`Validation set error` = mean, validation_std_err = std_err)
+      }
+    ),
+    cross_validation_error = map(
+      model_formula,
+      function(model_formula) {
+        workflow() %>%
+          add_model(linear_reg()) %>%
+          add_recipe(recipe(model_formula, credit)) %>%
+          fit_resamples(vfold_cv(credit, v = 10)) %>%
+          collect_metrics() %>%
+          filter(.metric == "rmse") %>%
+          select(`Cross-validation error` = mean, cv_std_err = std_err)
+      }
+    ),
+    `Square root of BIC` = sqrt(BIC)
+  ) %>%
+  unnest(c(validation_set_error, cross_validation_error)) #error in this code
+toc()
+```
+
+(error below caused by td_colors problem)
+```{r}
+credit_model_best %>%
+  pivot_longer(cols = c("Validation set error", "Cross-validation error",
+                        "Square root of BIC"),
+               names_to = "metric", values_to = "value") %>%
+  group_by(metric) %>%
+  mutate(best_model = value == min(value)) %>%
+  ungroup() %>%
+  mutate(
+    metric = factor(metric,
+                    levels = c("Square root of BIC", "Validation set error",
+                               "Cross-validation error"))
+  ) %>%
+  ggplot(aes(x = n_preds_adj, y = value)) +
+  geom_point(color = td_colors$nice$spanish_blue) +
+  geom_line(color = td_colors$nice$opera_mauve) +
+  geom_point(data = . %>% filter(best_model), size = 5, shape = 4,
+             color = td_colors$nice$spanish_blue) +
+  facet_wrap(~ metric, nrow = 1, scales = "free_y") +
+  scale_x_continuous("Number of predictors", breaks = seq(2, 10, 2))
+```
+
+
+we can select a model using the one-standard-error rule:
+```{r}
+credit_model_best %>%
+  transmute(
+    `# predictors` = n_preds_adj, `Cross-validation error`, cv_std_err,
+    lowest_error = min(`Cross-validation error`),
+    lowest_std_error = cv_std_err[`Cross-validation error` == lowest_error],
+    # The best model is the minimum `n_preds_adj` (number of predictors) for
+    # which the CV test error is within the standard error of the lowest error
+    best_model = n_preds_adj == min(n_preds_adj[`Cross-validation error` < lowest_error + lowest_std_error])
+  ) %>%
+  gt() %>%
+  tab_style(style = cell_text(weight = "bold"),
+            locations = cells_body(rows = best_model))
+```
+rationale here is that if models are performing very similarly, can choose the
+least complicated one.
+
+
+
+6.2: Shrinkage Methods
+6.2.1: Ridge Regression:
+-shrinkage penalty is small when the coefficients are close to zero, and so has 
+the effect of shrinking the estimates βj towards zero
+
+An Application to the Credit data
+In tidymodels, regularized least squares is done with the glmnet engine.
+
+specify the model:
+```{r}
+ridge_spec <- linear_reg(penalty = 0, mixture = 0) %>%
+  set_engine("glmnet")
+# The `parnship::translate()` function is a helpful way to "decode" a model spec
+ridge_spec %>% translate()
+```
+
+The penalty argument above refers to the λ tuning parameter. The mixture 
+variable ranges from 0 to 1, with 0 corresponding to ridge regression, 1 
+corresponding to lasso regression, and values between using a mixture of both.
+
+Fit balance to all of the predictors:
+```{r}
+credit_ridge_fit <- fit(ridge_spec, Balance ~ ., data = credit)
+tidy(credit_ridge_fit)
+```
+
+Because our ridge_spec had penalty = 0, the coefficients here correspond to no
+penalty, but the glmnet::glmnet() function fits a range of penalty values all 
+at once, which we can extract with broom::tidy like so:
+```{r}
+tidy(credit_ridge_fit, penalty = 100)
+```
+
+re-fit data on standardized data and recreate figure 6.4:
+```{r}
+credit_recipe <- recipe(Balance ~ ., data = credit) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_predictors())
+credit_ridge_workflow <- workflow() %>%
+  add_recipe(credit_recipe) %>%
+  add_model(ridge_spec)
+credit_ridge_fit <- fit(credit_ridge_workflow, data = credit)
+```
+
+compile coefficient estimates for a wide range of λ values with 
+purrr::map_dfr():
+```{r}
+map_dfr(seq(-2, 5, 0.1),
+        ~ tidy(credit_ridge_fit, penalty = 10^.x)) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term_highlight = fct_other(
+      term, keep = c("Income", "Limit", "Rating", "Student_Yes")
+    )
+  ) %>%
+  ggplot(aes(x = penalty, y = estimate)) +
+  geom_line(aes(group = term, color = term_highlight), size = 1) +
+  scale_x_log10(breaks = 10^c(-2, 0, 2, 4)) +
+  geom_vline(xintercept = 40, lty = 2, size = 1) +
+  labs(x = expression(lambda), y = "Standardized coefficients", color = NULL) +
+  scale_color_manual(values = c(td_colors$pastel6[1:4], "grey80")) +
+  theme(legend.position = c(0.8, 0.8))
+```
+
+```{r}
+extract_fit_engine(credit_ridge_fit)$lambda
+```
+
+
+```{r}
+coef_path_values <- 10^seq(-2, 5, 0.1)
+
+ridge_spec_path <- linear_reg(penalty = 0, mixture = 0) %>%
+  set_engine("glmnet", path_values = coef_path_values)
+credit_ridge_workflow_path <- workflow() %>%
+  add_recipe(credit_recipe) %>%
+  add_model(ridge_spec_path)
+
+credit_ridge_fit <- fit(credit_ridge_workflow_path, data = credit)
+```
+
+Now, with full range of lambda values can recreate figure correctly:
+```{r}
+# Compute the l2 norm for the least squares model
+credit_lm_fit <- lm(Balance ~ ., data = credit)
+credit_lm_fit_l2_norm <- sum(credit_lm_fit$coefficients[-1]^2)
+
+d <- map_dfr(seq(-2, 5, 0.1),
+        ~ tidy(credit_ridge_fit, penalty = 10^.x)) %>%
+  filter(term != "(Intercept)") %>%
+  group_by(penalty) %>%
+  mutate(l2_norm = sum(estimate^2),
+         l2_norm_ratio = l2_norm / credit_lm_fit_l2_norm) %>%
+  ungroup() %>%
+  mutate(
+    term_highlight = fct_other(
+      term, keep = c("Income", "Limit", "Rating", "Student_Yes")
+    )
+  )
+
+p1 <- d %>%
+  ggplot(aes(x = penalty, y = estimate)) +
+  geom_line(aes(group = term, color = term_highlight), size = 1) +
+  scale_x_log10(breaks = 10^c(-2, 0, 2, 4)) +
+  labs(x = expression(lambda), y = "Standardized coefficients", color = NULL) +
+  scale_color_manual(values = c(td_colors$pastel6[1:4], "grey80")) +
+  theme(legend.position = c(0.7, 0.8))
+p2 <- d %>%
+  ggplot(aes(x = l2_norm_ratio, y = estimate)) +
+  geom_line(aes(group = term, color = term_highlight), size = 1) +
+  labs(
+    x = expression(paste("||", hat(beta[lambda]), "||2 / ||", hat(beta), "||2")),
+    y = NULL, color = NULL
+  ) +
+  scale_color_manual(values = c(td_colors$pastel6[1:4], "grey80")) +
+  theme(legend.position = "none")
+p1 | p2
+```
+
+Why Does Ridge Regression Improve Over Least Squares?
+Ridge regression’s advantage over least squares has to do with the 
+bias-variance trade-off. As λ increases, the flexibility of the fit decreases, 
+leading to decreased variance but increased bias. So ridge regression works 
+best in situations where the least squares estimates have high variance, like 
+when the number of variables p is almost as large as the number of observations  
+n. (similar to Lasso)
+
+6.2.2: The Lasso
+-Lasso is almost identical to ridge, but forces some of the coefficients to be
+exactly zero instead of close to zero
+
+Fit model w/ Lasso Regression:
+```{r}
+ credit_recipe <- recipe(Balance ~ ., data = credit) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_predictors())
+```
+
+```{r}
+lasso_spec <- linear_reg(penalty = 20, mixture = 1) %>%
+  set_engine("glmnet")
+credit_lasso_workflow <- workflow() %>%
+  add_recipe(credit_recipe) %>%
+  add_model(lasso_spec)
+
+credit_lasso_fit <- fit(credit_lasso_workflow, data = credit)
+```
+
+```{r}
+# Compute the l1 norm for the least squares model
+credit_lm_fit_l1_norm <- sum(abs(credit_lm_fit$coefficients[-1]))
+
+d <- map_dfr(seq(-1, 3, 0.1),
+             ~ tidy(credit_lasso_fit, penalty = 10^.x)) %>%
+  filter(term != "(Intercept)") %>%
+  group_by(penalty) %>%
+  mutate(l1_norm = sum(abs(estimate)),
+         l1_norm_ratio = l1_norm / credit_lm_fit_l1_norm) %>%
+  ungroup() %>%
+  mutate(
+    term_highlight = fct_other(
+      term, keep = c("Income", "Limit", "Rating", "Student_Yes")
+    )
+  )
+
+p1 <- d %>%
+  ggplot(aes(x = penalty, y = estimate)) +
+  geom_line(aes(group = term, color = term_highlight), size = 1) +
+  scale_x_log10() +
+  labs(x = expression(lambda), y = "Standardized coefficients", color = NULL) +
+  scale_color_manual(values = c(td_colors$pastel6[1:4], "grey80")) +
+  theme(legend.position = c(0.7, 0.2))
+p2 <- d %>%
+  ggplot(aes(x = l1_norm_ratio, y = estimate)) +
+  geom_line(aes(group = term, color = term_highlight), size = 1) +
+  labs(
+    x = expression(paste("||", hat(beta[lambda]), "||1 / ||", hat(beta), "||1")),
+    y = NULL, color = NULL
+  ) +
+  scale_color_manual(values = c(td_colors$pastel6[1:4], "grey80")) +
+  theme(legend.position = "none")
+p1 | p2
+```
+
+
+6.2.3: Selecting the Tuning Parameter:
+-(tidydmodels framework does not allow fitting by LOOCV)
+```{r}
+credit_splits <- vfold_cv(credit, v = 10)
+```
+
+```{r}
+credit_ridge_recipe <- recipe(Balance ~ ., data = credit) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_predictors())
+```
+
+In the model specification, I set mixture = 0 for ridge regression, 
+and set penalty = tune() to indicate it as a tunable parameter:
+```{r}
+ridge_spec <- linear_reg(mixture = 0, penalty = tune()) %>%
+  set_engine("glmnet")
+```
+
+Combine into a workflow:
+```{r}
+credit_ridge_workflow <- workflow() %>%
+  add_recipe(credit_ridge_recipe) %>%
+  add_model(ridge_spec)
+credit_ridge_workflow
+```
+
+Lastly, because we are tuning penalty (λ), we need to define a grid of values 
+to try when fitting the model. The dials package provides many tools for tuning
+in tidymodels. grid_regular() creates a grid of evenly spaced points. As the 
+first argument, I provide a penalty() with argument range that takes minimum 
+and maximum values on a log scale:
+```{r}
+penalty_grid <- grid_regular(penalty(range = c(-2, 4)), levels = 10)
+penalty_grid
+```
+
+To fit models using a grid of values, we use tune_grid:
+```{r}
+tic()
+credit_ridge_tune <- tune_grid(
+  credit_ridge_workflow,
+  resamples = credit_splits,
+  grid = penalty_grid
+)
+toc()
+```
+
+Plot actually worked!:
+```{r}
+credit_ridge_tune %>% autoplot()
+```
+
+
+6.3: Dimension Reduction Methods:
+-all dimension reduction methods work in two steps
+  -in this chapter, two methods explored: principle components and partial 
+  least squares
+
+Principle components analysis (PCA) is a technique for reducing the dimension 
+of an n × p data matrix X. The first principal component direction of the data 
+is that along which the observations vary the most.
+
+Principle Componenets Regression Approach:
+-(PCR is NOT a feature selection method even though it offers a way to perform
+regression using a smaller number of variables)
+```{r}
+lm_spec <- linear_reg() %>% set_engine("lm")
+credit_splits <- vfold_cv(credit, v = 10)
+credit_pca_recipe <- recipe(Balance ~ ., data = credit) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors(), num_comp = tune())
+credit_pca_workflow <- workflow() %>%
+  add_recipe(credit_pca_recipe) %>%
+  add_model(lm_spec)
+```
+
+```{r}
+pca_grid <- grid_regular(num_comp(range = c(1, 11)), levels = 11)
+pca_grid
+```
+
+Perform 10 fold cross-validation for PCR with 1 to 11 components:
+```{r}
+credit_pca_tune <- tune_grid(
+  credit_pca_workflow,
+  resamples = credit_splits, grid = pca_grid,
+  # This option extracts the model fits, which are otherwise discarded
+  control = control_grid(extract = function(m) extract_fit_engine(m))
+)
+```
+
+Re-create right panel of 6.20
+(same td_colors error)
+```{r}
+credit_pca_tune %>%
+  collect_metrics() %>%
+  filter(.metric == "rmse") %>%
+  mutate(mse = mean^2) %>%
+  ggplot(aes(x = num_comp, y = mse)) +
+  geom_line(color = td_colors$nice$spanish_blue, size = 1) +
+  geom_point(shape = 21, size = 3,
+             fill = td_colors$nice$spanish_blue, color = "white") +
+  scale_y_continuous("Cross-validation MSE",
+                     breaks = c(20000, 40000, 60000, 80000)) +
+  scale_x_continuous("Number of components", breaks = c(2, 4, 6, 8, 10))
+```
+By MSE, the best performing models are M = 10 and 11 principal components, 
+which mean that dimension reduction is not needed here becausep = 11.
+
+IMPORTANT for PCR: We generally recommend standardizing each predictor, using (6.6), 
+prior to generating the principal components. This standardization ensures that 
+all variables are on the same scale. In the absence of standardization, the 
+high-variance variables will tend to play a larger role in the principal 
+components obtained, and the scale on which the variables are measured will
+ultimately have an effect on the final PCR model. However, if the variables 
+are all measured in the same units (say, kilograms, or inches), then one might 
+choose not to standardize them. 
+
+
+
+6.3.2: Partial Least Squares:
+-Unlike PCR, PLS identifies the new features which are related to the response,
+(it is a supervised alternative to PCR)
+-(PLS approach attempts to find directions that help explain both the response 
+and the predictors.)
+-In practice, PLS often performs no better than ridge regression or PCR. It 
+can often reduce bias, but it also has the potential to increase variance, so 
+it evens out relative to other methods.
+
+
+6.4: Considerations in High Dimensions:
+6.4.1: High Dimensional Data:
+-most techniques are intended for low-dimensional data
+-(by dimension, referring to the size of p)
+
+6.4.2: What Goes Wrong in High Dimensions?:
+-The problem is simple: when p>n or p≈n, a simple least squares regression line 
+is too flexible and hence overfits the data.
+
+6.4.3: Regressions in High Dimensions:
+The methods learned in this chapter (lasso) is useful for performing 
+regression in the high-dimensional setting because they are less flexible 
+fitting procedures.
+
+Three important points from Lasso model:
+1. regularlization or shrinkage plays a key role in high-dimensional problems,
+2. appropriate tuning parameter selection is crucial for good predictive 
+performance, 
+3. the test error tends to increase as the dimensionality of the problem 
+(i.e. the number of feature or predictors) increases, unless those additional
+features are truly associated with the response.
+
+
+
+6.5.1: Subset Selection Methods:
+Best subset selection:
+Here, we aim to predict a baseball player’s Salary from performance statistics
+in the previous year:
+```{r}
+hitters <- as_tibble(ISLR2::Hitters) %>%
+  filter(!is.na(Salary))
+glimpse(hitters)
+```
+
+```{r}
+library(leaps)
+regsubsets_hitters_salary <- regsubsets(Salary ~ ., data = hitters)
+summary(regsubsets_hitters_salary)
+```
+
+```{r}
+broom::tidy(regsubsets_hitters_salary) %>%
+  glimpse()
+```
+
+(td_colors not found)
+```{r}
+broom::tidy(regsubsets_hitters_salary) %>%
+  select(-`(Intercept)`) %>%
+  rownames_to_column(var = "n_vars") %>%
+  gt(rowname_col = "n_vars") %>%
+  gt::data_color(
+    columns = AtBat:NewLeagueN,
+    colors = col_numeric(
+      palette = c(td_colors$nice$soft_orange, td_colors$nice$lime_green),
+      domain = c(0, 1))
+  ) %>%
+  gt::fmt_number(r.squared:mallows_cp, n_sigfig = 4)
+```
+
+```{r}
+regsubsets_hitters_salary <- regsubsets(Salary ~ ., data = hitters, nvmax = 19)
+```
+
+To help choose the best model, plot R^2, adj R^2, Cp and BIC versus number of 
+predictors for all the models:
+```{r}
+tidy(regsubsets_hitters_salary) %>%
+  select(r.squared:mallows_cp) %>%
+  mutate(n_vars = 1:n()) %>%
+  pivot_longer(cols = -n_vars, names_to = "metric") %>%
+  ggplot(aes(x = n_vars, y = value)) +
+  geom_point(size = 2) +
+  geom_line(size = 1) +
+  geom_vline(
+    data = . %>%
+      group_by(metric) %>%
+      filter(value == ifelse(str_detect(metric, "r.squared"),
+                             max(value), min(value))),
+    aes(xintercept = n_vars), lty = 2
+  ) +
+  facet_wrap(~ metric, scales = "free_y")
+```
+
+get coefficient estimates:
+```{r}
+coef(regsubsets_hitters_salary, 6)
+```
+
+
+Forward and backward stepwise selection can be performed with the 
+method = "forward" and "backward" arguments:
+```{r}
+regsubsets_hitters_salary_forward <- regsubsets(Salary ~ ., data = hitters,
+                                                nvmax = 19, method = "forward")
+regsubsets_hitters_salary_backward <- regsubsets(Salary ~ ., data = hitters,
+                                              nvmax = 19, method = "backward")
+```
+
+
+Choosing Among Models Using the Validation-Set Approach and Cross-Validation:
+Use rsample to perform a 50-50 split into training and testing data:
+```{r}
+set.seed(8)
+hitters_split <- initial_split(hitters, prop = 0.5)
+hitters_train <- training(hitters_split)
+hitters_test <- testing(hitters_split)
+
+hitters_train_best <- regsubsets(Salary ~ ., data = hitters_train, nvmax = 19)
+```
+
+```{r}
+hitters_test_mse <- tibble(n_vars = 1:19) %>%
+  mutate(
+    model_coefs = map(
+      n_vars,
+      ~ names(coef(hitters_train_best, i = .x)) %>%
+        # Annoyingly, need to rename the categorical coefficients
+        str_replace("NewLeagueN", "NewLeague") %>%
+        str_replace("DivisionW", "Division") %>%
+        str_replace("LeagueN", "League")
+    ),
+    model_formula = map(
+      model_coefs,
+      ~ formula(paste0("Salary ~ ", paste(.x[-1], collapse = "+")))
+    ),
+    model_fit = map(model_formula, ~ lm(.x, data = hitters_test)),
+    mse = map_dbl(model_fit, ~ mean(.x$residuals^2))
+  )
+hitters_test_mse %>%
+  select(n_vars, model_coefs, mse) %>%
+  gt() %>%
+  data_color(columns = mse,
+             colors = c(td_colors$nice$charcoal, td_colors$nice$lime_green))
+```
+
+
+
+6.5.2: Ridge Regression and The Lasso:
+The glmnet::glmnet() function uses a different syntax for fitting models:
+```{r}
+x <- model.matrix(Salary ~ ., hitters)[, -1]
+y <- hitters$Salary
+
+lambda_grid <- 10^seq(10, -2, length = 100)
+ridge_salary <- glmnet::glmnet(x, y, alpha = 0, lambda = lambda_grid)
+```
+
+And the results are also extracted in a particular way. Here are the 
+coefficients associated with the 50th λ value (= 11498) and the 60th (= 705):
+```{r}
+coef(ridge_salary)[, 50]; coef(ridge_salary)[, 60]
+```
+
+The coefficients in the first model are smaller compared to the second
+```{r}
+sqrt(sum(coef(ridge_salary)[-1, 50]^2)); sqrt(sum(coef(ridge_salary)[-1, 60]^2))
+```
+
+```{r}
+ridge_spec <- linear_reg(penalty = 0, mixture = 0) %>%
+  set_engine("glmnet", path_values = lambda_grid)
+
+hitters_ridge_fit <- fit(ridge_spec, Salary ~ ., data = hitters)
+
+tidy(hitters_ridge_fit, penalty = lambda_grid[50])
+```
+
+```{r}
+tidy(hitters_ridge_fit, penalty = lambda_grid[60])
+```
+
+Visualize coefficient estimates:
+```{r}
+map_dfr(lambda_grid,
+        ~ tidy(hitters_ridge_fit, penalty = .x)) %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = penalty, y = estimate)) +
+  geom_point() +
+  scale_x_log10(breaks = 10^seq(-2, 10, 4),
+                labels = c("1e-2", "1e2", "1e6", "1e10")) +
+  facet_wrap(~ term, scales = "free_y", ncol = 5)
+```
+
+The predict() function also takes a penalty argument:
+```{r}
+predict(hitters_ridge_fit, penalty = 50, new_data = hitters)
+```
+
+Split the data and fit to the training set:
+```{r}
+set.seed(10)
+hitters_split <- initial_split(hitters, prop = 0.5)
+hitters_train <- training(hitters_split)
+hitters_test <- testing(hitters_split)
+
+hitters_ridge_fit <- fit(ridge_spec, Salary ~ ., data = hitters_train)
+tidy(hitters_ridge_fit, penalty = 4)
+```
+
+Now fit to the testing set and get MSE for λ = 4:
+```{r}
+# Note that `broom::augment()` is not implemented for glmnet models, so need to
+#  use `predict()` with `penalty` argument
+bind_cols(
+  hitters_test,
+  predict(hitters_ridge_fit, new_data = hitters_test, penalty = 4)
+) %>%
+  summarise(mse = mean((Salary - .pred)^2))
+```
+
+
+```{r}
+hitters_lm_null_fit <- lm(Salary ~ 1, data = hitters_train)
+
+bind_cols(
+  hitters_test,
+  predict(hitters_ridge_fit, new_data = hitters_test, penalty = 1e10),
+  .lm_pred = predict(hitters_lm_null_fit, newdata = hitters_test)
+) %>%
+  summarise(
+    mse_ridge = mean((Salary - .pred)^2),
+    mse_null = mean((Salary - .lm_pred)^2)
+  )
+```
+
+Likewise, compare a penalty of 0 to least squares regression with all 
+predictors:
+```{r}
+hitters_lm_fit <- lm(Salary ~ ., data = hitters_train)
+
+bind_cols(
+  hitters_test,
+  predict(hitters_ridge_fit, new_data = hitters_test, penalty = 0),
+  .lm_pred = predict(hitters_lm_fit, newdata = hitters_test)
+) %>%
+  summarise(
+    mse_ridge = mean((Salary - .pred)^2),
+    mse_lm = mean((Salary - .lm_pred)^2)
+  )
+```
+
+Instead of arbitrarily choosing λ = 4, let’s use 10-fold cross-validation:
+```{r}
+hitters_recipe <- recipe(Salary ~ ., data = hitters_train) %>%
+  step_dummy(all_nominal_predictors())
+ridge_spec <- linear_reg(penalty = tune(), mixture = 0) %>%
+  set_engine("glmnet")
+hitters_ridge_workflow <- workflow() %>%
+  add_model(ridge_spec) %>%
+  add_recipe(hitters_recipe)
+
+set.seed(291)
+hitters_resamples <- vfold_cv(hitters_train, v = 10)
+
+# Same values as previously, just showing the `dials` functionality
+lambda_grid <- grid_regular(penalty(range = c(-2, 10)), levels = 100)
+hitters_ridge_tune <- tune_grid(
+  hitters_ridge_workflow, resamples = hitters_resamples,
+  grid = lambda_grid
+)
+```
+
+see what is causing that warning message:
+```{r}
+autoplot(hitters_ridge_tune)
+```
+
+The full list of metrics can be collected like this:
+```{r}
+collect_metrics(hitters_ridge_tune)
+```
+
+Or find the best fit directly:
+```{r}
+select_best(hitters_ridge_tune, metric = "rmse")
+```
+
+```{r}
+hitters_ridge_workflow_final <- hitters_ridge_workflow %>%
+  finalize_workflow(select_best(hitters_ridge_tune, metric = "rmse"))
+hitters_ridge_fit_final <- fit(hitters_ridge_workflow_final,
+                               data = hitters_train)
+
+# Note that `broom::augment()` works here because the fit is finalized with a
+#  single `penalty` value -- previously I had to use `bind_cols(predict(...))`
+#  with an explicit `penalty`
+augment(hitters_ridge_fit_final, new_data = hitters_test) %>%
+  rmse(Salary, .pred) %>%
+  transmute(rmse = .estimate, mse = rmse^2)
+```
+
+Here are the coefficient fits of the final fit:
+```{r}
+tidy(hitters_ridge_fit_final)
+```
+
+
+The Lasso:
+Before performing cross-validation, plot coefficient estimates for a range of  
+λ values:
+```{r}
+lasso_spec <- linear_reg(penalty = 0, mixture = 1) %>%
+  set_engine("glmnet", path_values = lambda_grid$penalty)
+
+hitters_lasso_fit <- fit(lasso_spec, Salary ~ ., data = hitters)
+
+map_dfr(lambda_grid$penalty,
+        ~ tidy(hitters_lasso_fit, penalty = .x)) %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = penalty, y = estimate)) +
+  geom_point() +
+  scale_x_log10(breaks = 10^seq(-2, 10, 4),
+                labels = c("1e-2", "1e2", "1e6", "1e10")) +
+  facet_wrap(~ term, scales = "free_y", ncol = 5) 
+  # + add_facet_borders()
+```
+
+Important: All of the coefficients quickly go to zero. Knowing this, and seeing
+how rsq blew up in the ridge example, I’m going to constrain penalty_grid to a 
+smaller range.
+
+Now follow the same procedure as the ridge regression model to find the best 
+choice of λ:
+```{r}
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet")
+hitters_lasso_workflow <- workflow() %>%
+  add_model(lasso_spec) %>%
+  add_recipe(hitters_recipe)
+
+lambda_grid <- grid_regular(penalty(range = c(-2, 2)), levels = 50)
+
+hitters_lasso_tune <- tune_grid(
+  hitters_lasso_workflow, resamples = hitters_resamples,
+  grid = lambda_grid
+)
+
+autoplot(hitters_lasso_tune)
+```
+
+```{r}
+select_best(hitters_lasso_tune, metric = "rmse")
+```
+
+```{r}
+hitters_lasso_workflow_final <- hitters_lasso_workflow %>%
+  finalize_workflow(select_best(hitters_lasso_tune, metric = "rmse"))
+hitters_lasso_fit_final <- fit(hitters_lasso_workflow_final,
+                               data = hitters_train)
+
+augment(hitters_lasso_fit_final, new_data = hitters_test) %>%
+  rmse(Salary, .pred) %>%
+  transmute(rmse = .estimate, mse = rmse^2)
+```
+
+-Essentially same performance as ridge
+-Advantage of Lasso is that is has performed variable selection for us by 
+shrinking certain coefficients down to zero
+
+```{r}
+tidy(hitters_lasso_fit_final) %>%
+  arrange(estimate)
+```
+
+
+
+Tidymodels approach to perform PCR with scale and validation parameters for 
+standardizing predictors and performing cross-validation.
+```{r}
+set.seed(994)
+lm_spec <- linear_reg() %>% set_engine("lm")
+hitters_resamples <- vfold_cv(hitters, v = 10)
+hitters_pca_recipe <- recipe(Salary ~ ., data = hitters) %>%
+  step_dummy(all_nominal()) %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors(), num_comp = tune())
+hitters_pca_workflow <- workflow() %>%
+  add_model(lm_spec) %>%
+  add_recipe(hitters_pca_recipe)
+num_comp_grid <- grid_regular(num_comp(range = c(0, 19)), levels = 19)
+
+hitters_pca_tune <- tune_grid(hitters_pca_workflow,
+                              resamples = hitters_resamples,
+                              grid = num_comp_grid)
+```
+
+And here is that procedure applied to the training data and evaluated on the 
+test set:
+```{r}
+set.seed(87)
+hitters_resamples <- vfold_cv(hitters_train, v = 10)
+
+hitters_pca_tune <- tune_grid(hitters_pca_workflow,
+                              resamples = hitters_resamples,
+                              grid = num_comp_grid)
+
+hitters_pca_workflow_final <-
+  finalize_workflow(hitters_pca_workflow,
+                    select_best(hitters_pca_tune, metric = "rmse"))
+
+# Apply the workflow to the full training set, then evaluate on testing
+hitters_pca_fit_final <- last_fit(hitters_pca_workflow_final,
+                                  hitters_split)
+hitters_pca_fit_final %>% collect_metrics()
+```
+
+
+Partial Least Squares
+
+To fix error message that I would get in code chunk after this, run this:
+```{r}
+tidymodels_prefer(quiet = FALSE)
+```
+
+Was getting error messages trying to run PLS code from textbook, not worth 
+leaving code here that wasn't working.
+
+
+
+
+
+NOT FROM SAME CHAPTER:
+(Random Forest Practice from Chapter 8)
+
+```{r}
+install.packages("janitor")
+```
+
+```{r}
+library(janitor)
+```
+
+```{r}
+install.packages("tree")
+```
+
+```{r}
+library(tree)
+```
+
+```{r}
+RL_numeric <- read_csv("~/Desktop/RL_numeric.csv")
+```
+
+```{r}
+team_diff <- read_csv("~/Desktop/team_diff.csv")
+```
+
+```{r}
+team_diff1 <- team_diff %>% select(where(is.numeric), winner)
+team_diff1 <- team_diff1 %>% select(-c("core_goals_diff", "winner_binary", 
+                                       "core_assists_diff",
+                                       "core_score_diff"))
+```
+
+
+
+```{r}
+set.seed(993)
+RL_splits <- initial_split(team_diff1, prop = 0.5)
+RL_train <- training(RL_splits)
+RL_test <- testing(RL_splits)
+
+RL_resamples <- vfold_cv(RL_train, v = 5)
+
+RL_train_tree <- tree(winner ~ ., data = RL_train)
+
+plot(RL_train_tree)
+text(RL_train_tree)
+```
+
+```{r}
+predictions <- predict(RL_train_tree, newdata = RL_test)
+# if more than 50% likely 
+predictions <- if_else(predictions > 0.5, 
+                       true = TRUE, 
+                       false = FALSE)
+accuracy <- mean(predictions == RL_test$winner)
+accuracy
+```
+
+The Random Forest model predicted game outcome with 95.25% accuracy.
+
+
+
+
+
+
+
+
+Produce a plot of error versus tree size:
+```{r}
+# Fit the CV splits
+RL_resamples_tree <-
+  map_dfr(RL_resamples$splits, analysis, .id = "split") %>%
+  group_by(split) %>%
+  nest() %>%
+  mutate(
+    tree_mod = map(data, ~ tree(winner ~ ., data = .x))
+  )
+
+# Prune the tree fit to the training data
+RL_tree_pruned <- 
+  tibble(n_terminal = 1:10) %>%
+  mutate(
+    train_tree_pruned = map(n_terminal,
+                            ~ prune.tree(RL_train_tree, best = .x)),
+    # Need to use logistic regression for single node tree models
+    train_tree_pruned = ifelse(
+      n_terminal == 1,
+      list(glm(winner ~ 1, data = RL_train, family = binomial)),
+      train_tree_pruned
+    )
+  )
+
+# Prune the tree from the CV splits
+RL_resamples_tree_pruned <- RL_resamples_tree %>%
+  crossing(n_terminal = 1:15) %>%
+  mutate(
+    tree_pruned = map2(tree_mod, n_terminal,
+                       ~ prune.tree(.x, best = .y)),
+    # As above, replace the single node trees with glm
+    tree_pruned = ifelse(
+      n_terminal == 1,
+      map(data, ~ glm(winner ~ 1, data = .x, family = binomial)),
+      tree_pruned
+    )
+  )
+
+# A helper function to calculate classification error from tree or glm models
+calc_class_error <- function(mod, data) {
+  if (class(mod)[1] == "tree") {
+    preds <- predict(mod, type = "class", newdata = data)
+  } else {
+    preds <- predict(mod, type = "response", newdata = data)
+    preds <- ifelse(preds > 0.5, "Yes", "No") %>%
+      factor(levels = c("No", "Yes"))
+    
+  }
+  1 - mean(preds == data$winner)
+}
+
+# Calculate error on the training and testing sets
+RL_tree_pruned_error <- RL_tree_pruned %>%
+  mutate(
+    train_error = map_dbl(
+      train_tree_pruned,
+      ~ calc_class_error(.x, RL_train)
+    ),
+    test_error = map_dbl(
+      train_tree_pruned,
+      ~ calc_class_error(.x, RL_test)
+    )
+  )
+# And the CV assessment data
+RL_resamples_tree_pruned_error <- RL_resamples_tree_pruned %>%
+  select(split, n_terminal, tree_pruned) %>%
+  left_join(
+    map_dfr(heart_resamples$splits, assessment, .id = "split") %>%
+      group_by(split) %>%
+      nest() %>%
+      rename(assessment_data = data),
+    by = "split"
+  ) %>%
+  mutate(
+    cv_error = map2_dbl(
+      tree_pruned, assessment_data,
+      ~ calc_class_error(.x, .y)
+    )
+  ) %>%
+  group_by(n_terminal) %>%
+  summarise(cv_error = mean(cv_error), .groups = "drop")
+
+RL_tree_pruned_error %>%
+  select(-train_tree_pruned) %>%
+  left_join(RL_resamples_tree_pruned_error, by = "n_terminal") %>%
+  pivot_longer(cols = c(train_error, test_error, cv_error),
+               names_to = "data_set") %>%
+  mutate(
+    data_set = factor(data_set,
+                      levels = c("train_error", "cv_error", "test_error"),
+                      labels = c("Training", "Cross-validation", "Test"))
+  ) %>%
+  ggplot(aes(x = n_terminal, y = value, color = data_set)) +
+  geom_point(size = 3) +
+  geom_line(size = 1) +
+  scale_y_continuous("Error", breaks = seq(0, 0.6, 0.1)) +
+  expand_limits(y = c(0, 0.6)) +
+  scale_x_continuous("Tree size", breaks = c(5, 10, 15)) +
+  scale_color_manual(NULL, values = c("black", "darkorange", "darkgreen")) +
+  theme(legend.position = c(0.7, 0.8))
+```
+
+
+
+
+
+
+
+
+
+
+
+

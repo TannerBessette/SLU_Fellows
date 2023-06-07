@@ -1,0 +1,70 @@
+---
+title: "Rocket League Random Forest Using Tidymodels"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(broom)
+library(gt)
+library(patchwork)
+library(tictoc)
+library(ISLR2)
+library(ggplot2)
+library(dplyr)
+library(glmnet)
+library(leaps)
+```
+
+```{r}
+RL_numeric <- read_csv("~/Desktop/RL_numeric.csv")
+```
+
+
+Fit a Random Forest Model to the RL_numeric dataset:
+```{r}
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet")
+
+RL_recipe <- 
+  recipe(winner_binary ~ core_saves_diff + core_assists_diff, 
+         data = RL_numeric) %>%
+  step_normalize(all_predictors())
+
+RL_workflow <- workflow() %>%
+  add_model(lasso_spec) %>%
+  add_recipe(RL_recipe)
+```
+
+```{r}
+set.seed(5)
+RL_resamples <- vfold_cv(RL_numeric, v = 10)
+
+RL_tune_res <-
+  tune_grid(RL_workflow, resamples = RL_resamples,
+            grid = grid_regular(penalty(range = c(-1, 0)), levels = 50))
+autoplot(RL_tune_res)
+```
+
+```{r}
+RL_workflow_final <-
+  finalize_workflow(RL_workflow, select_best(RL_tune_res, metric = "rmse"))
+results <- fit(RL_workflow_final, data = RL_numeric) %>%
+  tidy() %>%
+  filter(estimate != 0)
+print(results, n = 42)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

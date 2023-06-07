@@ -1,0 +1,171 @@
+---
+title: "Random Forest Model to Predict RL Game Outcome"
+format: html
+---
+
+Install and load in necessary packages:
+```{r}
+install.packages("janitor")
+install.packages("tree")
+```
+
+```{r}
+library(janitor)
+library(tree)
+```
+
+Read in dataset:
+```{r}
+team_diff <- read_csv("~/Desktop/team_diff.csv")
+```
+
+
+Select predictor variables that are numeric and not obviously correlated:
+```{r}
+team_diff1 <- team_diff %>% select(where(is.numeric), winner)
+team_diff1 <- team_diff1 %>% select(-c("core_goals_diff", "winner_numeric",
+                                       "winner_factor",
+                                       "core_assists_diff",
+                                       "core_score_diff"))
+```
+
+
+Build Random Forest Model:
+```{r}
+set.seed(993)
+RL_splits <- initial_split(team_diff1, prop = 0.5)
+RL_train <- training(RL_splits)
+RL_test <- testing(RL_splits)
+
+RL_resamples <- vfold_cv(RL_train, v = 5)
+
+RL_train_tree <- tree(winner ~ ., data = RL_train)
+
+plot(RL_train_tree)
+text(RL_train_tree)
+```
+
+
+Get predictions and calculate model classification accuracy:
+```{r}
+predictions <- predict(RL_train_tree, newdata = RL_test)
+# if more than 50% likely 
+predictions <- if_else(predictions > 0.5, 
+                       true = TRUE, 
+                       false = FALSE)
+accuracy <- mean(predictions == RL_test$winner)
+accuracy
+```
+
+The Random Forest model predicted game outcome with 94.627% accuracy.
+
+
+
+Produce a plot of error versus tree size:
+```{r}
+# Fit the CV splits
+RL_resamples_tree <-
+  map_dfr(RL_resamples$splits, analysis, .id = "split") %>%
+  group_by(split) %>%
+  nest() %>%
+  mutate(
+    tree_mod = map(data, ~ tree(winner ~ ., data = .x))
+  )
+
+# Prune the tree fit to the training data
+RL_tree_pruned <- 
+  tibble(n_terminal = 1:10) %>%
+  mutate(
+    train_tree_pruned = map(n_terminal,
+                            ~ prune.tree(RL_train_tree, best = .x)),
+    # Need to use logistic regression for single node tree models
+    train_tree_pruned = ifelse(
+      n_terminal == 1,
+      list(glm(winner ~ 1, data = RL_train, family = binomial)),
+      train_tree_pruned
+    )
+  )
+
+# Prune the tree from the CV splits
+RL_resamples_tree_pruned <- RL_resamples_tree %>%
+  crossing(n_terminal = 1:15) %>%
+  mutate(
+    tree_pruned = map2(tree_mod, n_terminal,
+                       ~ prune.tree(.x, best = .y)),
+    # As above, replace the single node trees with glm
+    tree_pruned = ifelse(
+      n_terminal == 1,
+      map(data, ~ glm(winner ~ 1, data = .x, family = binomial)),
+      tree_pruned
+    )
+  )
+
+# A helper function to calculate classification error from tree or glm models
+calc_class_error <- function(mod, data) {
+  if (class(mod)[1] == "tree") {
+    preds <- predict(mod, type = "class", newdata = data)
+  } else {
+    preds <- predict(mod, type = "response", newdata = data)
+    preds <- ifelse(preds > 0.5, "Yes", "No") %>%
+      factor(levels = c("No", "Yes"))
+    
+  }
+  1 - mean(preds == data$winner)
+}
+
+# Calculate error on the training and testing sets
+RL_tree_pruned_error <- RL_tree_pruned %>%
+  mutate(
+    train_error = map_dbl(
+      train_tree_pruned,
+      ~ calc_class_error(.x, RL_train)
+    ),
+    test_error = map_dbl(
+      train_tree_pruned,
+      ~ calc_class_error(.x, RL_test)
+    )
+  )
+# And the CV assessment data
+RL_resamples_tree_pruned_error <- RL_resamples_tree_pruned %>%
+  select(split, n_terminal, tree_pruned) %>%
+  left_join(
+    map_dfr(heart_resamples$splits, assessment, .id = "split") %>%
+      group_by(split) %>%
+      nest() %>%
+      rename(assessment_data = data),
+    by = "split"
+  ) %>%
+  mutate(
+    cv_error = map2_dbl(
+      tree_pruned, assessment_data,
+      ~ calc_class_error(.x, .y)
+    )
+  ) %>%
+  group_by(n_terminal) %>%
+  summarise(cv_error = mean(cv_error), .groups = "drop")
+
+RL_tree_pruned_error %>%
+  select(-train_tree_pruned) %>%
+  left_join(RL_resamples_tree_pruned_error, by = "n_terminal") %>%
+  pivot_longer(cols = c(train_error, test_error, cv_error),
+               names_to = "data_set") %>%
+  mutate(
+    data_set = factor(data_set,
+                      levels = c("train_error", "cv_error", "test_error"),
+                      labels = c("Training", "Cross-validation", "Test"))
+  ) %>%
+  ggplot(aes(x = n_terminal, y = value, color = data_set)) +
+  geom_point(size = 3) +
+  geom_line(size = 1) +
+  scale_y_continuous("Error", breaks = seq(0, 0.6, 0.1)) +
+  expand_limits(y = c(0, 0.6)) +
+  scale_x_continuous("Tree size", breaks = c(5, 10, 15)) +
+  scale_color_manual(NULL, values = c("black", "darkorange", "darkgreen")) +
+  theme(legend.position = c(0.7, 0.8))
+```
+
+
+
+
+
+

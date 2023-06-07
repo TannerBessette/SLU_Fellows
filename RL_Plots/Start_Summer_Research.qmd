@@ -1,0 +1,242 @@
+---
+title: "Start of Summer Research"
+format: html
+---
+(With updated diff code from Prof. Higham)
+
+
+Load in some necessary packages:
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(GGally)
+```
+
+Load in the dataset:
+```{r}
+rl_df <- read.csv("~/Desktop/games_by_teams.csv")
+```
+
+View variable names in the dataset:
+```{r}
+names(rl_df)
+```
+
+
+(Next few plots before ggpairs are still from combined_df)
+Ball Possession Plots:
+```{r}
+ggplot(data = combined_df, aes(x = winner, 
+                         y = net_ball_poss)) +
+  geom_boxplot()
+```
+
+
+Demo Plots:
+```{r}
+## This plot is very interesting, demo is not a statistic that I would've 
+## expected to be so clear with the outliers. No team that dominated the demos 
+## lost the game.
+ggplot(data = combined_df, aes(x = winner, y = net_demo)) +
+  geom_boxplot()
+```
+
+```{r}
+## Really interesting that it seems like winning/losing the demo battle by
+## 5 or less does not appear to have any sort of clear effect, but once it is 
+## more than that it appears to have a very significant effect.
+ggplot(data = combined_df, aes(x = winner, y = net_demo)) +
+  geom_violin()
+```
+
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_demo)) +
+  geom_jitter(width = 0.40)
+```
+
+
+Time behind ball plot:
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_demo)) +
+  geom_boxplot()
+```
+
+Want to see if the time behind ball correlates to time in defensive half:
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_positioning_time_def_half)) +
+  geom_boxplot()
+```
+
+It didn't, actually the more time spent in the defensive half appears to mean
+the less likely it is to win the game. My best guess to what this means is that,
+when you are constantly putting pressure on the other team, you are 
+consistently behind the ball but you are also more likely at midfield or 
+in the attacking half.
+
+
+Net slow speed plots:
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_slow_speed)) +
+  geom_boxplot()
+```
+
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_slow_speed)) +
+  geom_violin()
+```
+
+Supersonic speed splots:
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_supersonic)) +
+  geom_boxplot()
+```
+
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_supersonic)) +
+  geom_jitter(width = 0.40)
+```
+
+I am very surprised to see that neither of the speed variables appear to be 
+significant predictors. As a fan/player, keeping your speed high is one of the
+number one things that typically gets attributed to winning/losing.
+
+
+Shoot percentage plots:
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_shoot_pct)) +
+  geom_boxplot()
+```
+
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_shoot_pct)) +
+  geom_violin()
+```
+
+```{r}
+ggplot(data = combined_df, aes(x = winner, y = net_shoot_pct)) +
+  geom_jitter(width = 0.40)
+```
+(jitter plots pretty much suck with this dataset except for looking at outliers)
+
+
+
+
+
+PLOTS BELOW USING team_diff DATASET:
+ggpairs plots to look at multiple predictors at a time:
+net_ball_poss, net_shots, net_saves, net_assists
+```{r}
+ggpairs(data = team_diff, columns = c(4, 5, 7, 9, 10), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+Net_ball_poss(6) appears to be a very weak predictor.
+Net_saves(8) appears to be a fairly weak predictor of match outcome.
+Net_shots(7) appear to be a moderate predictor of match outcome.
+Net_assists(9) appear to be a strong predictor of match outcome, which is to be
+expected.
+
+net_ball_time_in_side, net_score, net_shoot_pct, net_bpm
+```{r}
+ggpairs(data = team_diff, columns = c(4, 6, 11, 12, 13), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+Net_score(11) appears to have a strong correlation to match outcome.
+Net_shoot_pct(12) also appears to have a fairly strong correlation to match 
+outcome.
+Net_ball_time_in_side(10) appears to have moderate correlation to match outcome.
+Net_bpm(13) appears to be a weak predictor in match outcome.
+
+
+
+net_boost_stolen, net_time_zero_boost, net_supersonic, net_slow_speed
+```{r}
+ggpairs(data = team_diff, columns = c(4, 17, 29, 36, 38), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+Net_time_zero_boost(15) appears to have a slight correlation to match outcome.
+Net_boost_stolen(14) appears to be a fairly weak predictor.
+Net_supersonic(16) and net_slow_speed(17) appear to have almost no correlation 
+to match outcome at all.
+(ALL APPEAR TO BE WEAK)
+
+
+
+
+net_ground_time, net_powerslide_time, net_positioning_time_def_half
+```{r}
+ggpairs(data = team_diff, columns = c("winner_binary", 
+                                        "movement_time_powerslide_diff", 
+                                        "positioning_time_defensive_half_diff",
+                                        "movement_time_ground_diff"), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+Net_ground_time(18) and net_powerslide(19) appear to be pretty weak predictors.
+Net_positioning_time_def_half (20) appears to have correlation to match outcome.
+(ALL WEAK, def_half best with corr of -0.162)
+
+
+net_time_behind_ball, net_demo
+```{r}
+ggpairs(data = team_diff, columns = c("winner_binary", 
+                                        "demo_inflicted_diff",
+                                        "positioning_time_behind_ball_diff"), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+Both net_time_behind_ball(21) and net_demo(22) appear to be good predictors.
+Demo_inflicted_diff has weak "corr" but obvious visual diff.
+(tim_behind_ball_diff has corr: 0.666)
+
+
+Variables with corr values above 0.5: core_score_diff, 
+core_shooting_percentage_diff, core_assists_diff, positioning_time_behind_ball
+CLOSE/potentially strong predictors: core_shots_diff, demo_inflicted_diff,
+ball_time_in_side_diff (corr 0.25)
+
+Further investigating the "potentially strong" ones:
+core_shots_diff:
+```{r}
+ggplot(data = team_diff, aes(x = winner, 
+                             y = core_shots_diff)) +
+  geom_boxplot()
+```
+In my opinion, there is a clear correlation.
+
+
+demo_inflicted_diff:
+```{r}
+ggplot(data = team_diff, aes(x = winner, y = demo_inflicted_diff)) +
+  geom_boxplot()
+```
+If demo difference is big, there appears to be a very clear correlation to 
+game outcome. However, when the demo difference is close, it appears to be a 
+very weak predictor.
+
+
+ball_time_in_side_diff:
+```{r}
+ggplot(data = team_diff, aes(x = winner, y = ball_time_in_side_diff)) +
+  geom_boxplot()
+```
+There appears to be a slight correlation between ball_time_in_side_diff and 
+match outcome.
+
+
+positioning_time_behind_ball_diff plot:
+```{r}
+ggplot(data = team_diff, aes(x = winner, 
+                             y = positioning_time_behind_ball_diff)) + 
+  geom_boxplot(fill="coral1",colour ="black")
+```
+
+
+core_shooting_percentage_diff
+```{r}
+ggplot(data = team_diff, aes(x = winner, 
+                             y = core_shooting_percentage_diff)) + 
+  geom_boxplot(fill="coral1",colour ="black")
+```
+
+
+
+

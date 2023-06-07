@@ -1,0 +1,79 @@
+---
+title: "Lasso Model to Predict RL Game Outcome"
+format: html
+---
+
+
+Fitting a Lasso model to RL dataset:
+```{r}
+RL_numeric <- read_csv("~/Desktop/RL_numeric.csv")
+```
+
+```{r}
+RL_numeric <- RL_numeric |> select(-c("core_assists_diff",
+                                      "core_score_diff",
+                                      "winner"))
+```
+
+```{r}
+view(RL_numeric)
+```
+
+
+Split the data into train/test split:
+```{r}
+set.seed(993)
+RL_splits <- initial_split(RL_numeric, prop = 0.5)
+RL_train <- training(RL_splits)
+RL_test <- testing(RL_splits)
+```
+
+```{r}
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet", family = "binomial")
+
+RL_recipe <- 
+  recipe(winner_numeric ~ ., 
+         data = RL_train) %>%
+  step_normalize(all_predictors())
+
+RL_workflow <- workflow() %>%
+  add_model(lasso_spec) %>%
+  add_recipe(RL_recipe)
+```
+
+```{r}
+set.seed(5)
+RL_resamples <- vfold_cv(RL_numeric, v = 10)
+
+RL_tune_res <-
+  tune_grid(RL_workflow, resamples = RL_resamples,
+            grid = grid_regular(penalty(range = c(-1, 0)), levels = 50))
+autoplot(RL_tune_res)
+```
+
+```{r}
+RL_workflow_final <-
+  finalize_workflow(RL_workflow, select_best(RL_tune_res, metric = "rmse"))
+RL_fit <- fit(RL_workflow_final, data = RL_train)
+results <- fit(RL_workflow_final, data = RL_numeric) %>%
+  tidy() %>%
+  filter(estimate != 0)
+print(results, n = 42)
+```
+
+
+Evaluate model:
+```{r}
+Lasso_predictions <- predict(RL_fit, new_data = RL_test)
+Lasso_predictions <- if_else(Lasso_predictions > 0.5, 
+                       true = TRUE, 
+                       false = FALSE)
+accuracy <- mean(Lasso_predictions == RL_test$winner_numeric)
+accuracy
+```
+
+The Lasso model classified game outcome with 74.703% accuracy.
+
+
+
