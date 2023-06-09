@@ -6,17 +6,25 @@ format: html
 
 Fitting a Lasso model to RL dataset:
 ```{r}
-RL_numeric <- read_csv("~/Desktop/RL_numeric.csv")
+RL_numeric <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
 ```
 
 ```{r}
-RL_numeric <- RL_numeric |> select(-c("core_assists_diff",
+RL_numeric <- RL_numeric |> select(-c("core_goals_diff",
+                                      "core_assists_diff",
                                       "core_score_diff",
-                                      "winner"))
+                                      "winner_numeric",
+                                      "series_id"))
 ```
 
 ```{r}
 view(RL_numeric)
+```
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
 ```
 
 
@@ -33,7 +41,7 @@ lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
   set_engine("glmnet", family = "binomial")
 
 RL_recipe <- 
-  recipe(winner_numeric ~ ., 
+  recipe(winner_factor ~ ., 
          data = RL_train) %>%
   step_normalize(all_predictors())
 
@@ -69,11 +77,11 @@ Lasso_predictions <- predict(RL_fit, new_data = RL_test)
 Lasso_predictions <- if_else(Lasso_predictions > 0.5, 
                        true = TRUE, 
                        false = FALSE)
-accuracy <- mean(Lasso_predictions == RL_test$winner_numeric)
+accuracy <- mean(Lasso_predictions == RL_test$winner_factor)
 accuracy
 ```
 
-The Lasso model classified game outcome with 74.703% accuracy.
+The Lasso model classified game outcome with 74.971% accuracy.
 
 
 

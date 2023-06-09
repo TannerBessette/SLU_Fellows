@@ -5,7 +5,7 @@ library(tidyverse)
 library(dplyr)
 
 
-# read in the dataset
+# read in the team dataset
 rl_df <- read.csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_teams.csv")
 
 
@@ -73,25 +73,59 @@ team_diff <- team_diff |>
          team_name_orange, team_region, team_region_orange, ends_with("_diff"), 
          everything())
 
-
 # Output the csv file for team_diff dataset:
-write_csv(x = team_diff, "~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
+# write_csv(x = team_diff, "~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
+
+
+
+
+# Load in the players dataset:
+games_by_players <- 
+  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
+
+
+#Calculate the team's standard deviations within each variable within each game:
+team_std <- games_by_players |>
+  group_by(game_id, team_id) |>
+  # calculate the standard deviations for each team for each numeric variable
+  mutate(across(where(is.numeric), \(x) sd(x, na.rm =TRUE),
+                .names = "sd_{.col}")) |>
+  ungroup() |>
+  # keep only match_id, team_id, and SDs 
+  select(game_id, team_id, winner, starts_with("sd_")) |>
+  # Only keep one of each row (currently 3 identical for each)
+  unique()
+
+
+# Merge this dataset with team_diff:
+RL_joined <- left_join(team_diff, team_std, by = c("game_id" = "game_id"))
+
+# Remove rows with NAs from the dataset
+RL_joined <- na.omit(RL_joined)
+
+
+# Output a csv with the joined team and players datasets:
+# (this should include all of the diff variables and all of the sd variables)
+write_csv(x = RL_joined, "~/Desktop/SLU_Fellows/RL_Datasets/RL_joined.csv")
+
+
+
+
 
 
 ## NOW CREATE AND TIDY RL_numeric AS SEPARATE CSV:
 
 # Since this is the dataset we are using for binary (1/0) game outcome,
 # need to remove goal_diff as a predictor:
-RL_numeric <- team_diff |> select(-c("core_goals_diff"))
+RL_numeric <- RL_joined |> select(-c("core_goals_diff"))
 
 
 # Only keep winner and variables that are numeric:
-RL_numeric <- RL_numeric %>% select(where(is.numeric), series_id, winner_factor)
+RL_numeric <- RL_joined %>% select(where(is.numeric), series_id, winner_factor)
 
 
 # Create a csv file for RL_numeric dataset:
 write_csv(x = RL_numeric, "~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
-
 
 
 

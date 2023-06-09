@@ -1,0 +1,77 @@
+---
+title: "RL_Players_Manipulation"
+format: html
+---
+
+```{r}
+matches_by_players <- 
+  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/matches_by_players.csv")
+games_by_players <- 
+  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
+team_diff <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(GGally)
+```
+
+
+```{r}
+view(matches_by_players)
+```
+
+Calculate the team's standard deviations within each variable within each game:
+```{r}
+team_std <- games_by_players |>
+  group_by(game_id, team_id) |>
+  # calculate the standard deviations for each team for each numeric variable
+  mutate(across(where(is.numeric), \(x) sd(x, na.rm =TRUE),
+                .names = "sd_{.col}")) |>
+  ungroup() |>
+  # keep only match_id, team_id, and SDs 
+  select(game_id, team_id, winner, starts_with("sd_")) |>
+  # Only keep one of each row (currently 3 identical for each)
+  unique()
+```
+
+```{r}
+RL_joined <- na.omit(RL_joined)
+view(RL_joined)
+```
+
+
+```{r}
+ggpairs(data = team_std, columns = c(3, 4, 5, 6, 7), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+```{r}
+ggpairs(data = team_std, columns = c(3, 8, 9, 10, 11), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+```{r}
+ggpairs(data = team_std, columns = c(3, 12, 13, 14, 15), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+```{r}
+ggpairs(data = team_std, columns = c(3, 16, 17, 18, 19), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+
+Merge this dataset with team_diff:
+```{r}
+RL_joined <- left_join(team_diff, team_std, by = c("game_id" = "game_id"))
+```
+
+```{r}
+view(team_diff)
+```
+
+
+
