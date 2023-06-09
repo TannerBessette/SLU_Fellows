@@ -16,16 +16,14 @@ library(tree)
 
 Read in dataset:
 ```{r}
-team_diff <- read_csv("~/Desktop/team_diff.csv")
+RL_numeric <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
 ```
 
 
-Select predictor variables that are numeric and not obviously correlated:
+Remove predictor variables with obvious correlation:
 ```{r}
-team_diff1 <- team_diff %>% select(where(is.numeric), winner)
-team_diff1 <- team_diff1 %>% select(-c("core_goals_diff", "winner_numeric",
-                                       "winner_factor",
-                                       "core_assists_diff",
+RL_numeric <- RL_numeric %>% select(-c("core_assists_diff",
+                                       "winner_numeric",
                                        "core_score_diff"))
 ```
 
@@ -33,18 +31,17 @@ team_diff1 <- team_diff1 %>% select(-c("core_goals_diff", "winner_numeric",
 Build Random Forest Model:
 ```{r}
 set.seed(993)
-RL_splits <- initial_split(team_diff1, prop = 0.5)
+RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.5)
 RL_train <- training(RL_splits)
 RL_test <- testing(RL_splits)
 
-RL_resamples <- vfold_cv(RL_train, v = 5)
+RL_resamples <- group_vfold_cv(RL_train, v = 5, group = series_id)
 
-RL_train_tree <- tree(winner ~ ., data = RL_train)
+RL_train_tree <- tree(winner_factor ~ . - series_id, data = RL_train)
 
 plot(RL_train_tree)
 text(RL_train_tree)
 ```
-
 
 Get predictions and calculate model classification accuracy:
 ```{r}
@@ -53,11 +50,26 @@ predictions <- predict(RL_train_tree, newdata = RL_test)
 predictions <- if_else(predictions > 0.5, 
                        true = TRUE, 
                        false = FALSE)
-accuracy <- mean(predictions == RL_test$winner)
+accuracy <- mean(predictions == RL_test$winner_factor)
 accuracy
 ```
 
-The Random Forest model predicted game outcome with 94.627% accuracy.
+The Random Forest model predicted game outcome with 95.554% accuracy.
+
+
+
+Check how many games there are for each matchup:
+```{r}
+series_count_table <- table(RL_numeric$series_id)
+print(series_count_table)
+max(series_count_table)
+```
+
+
+
+
+
+
 
 
 

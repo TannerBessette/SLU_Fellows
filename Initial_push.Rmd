@@ -1,8 +1,0 @@
----
-title: "R Notebook"
-output: html_notebook
-editor_options: 
-  chunk_output_type: inline
----
-
-## This is a test script

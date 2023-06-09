@@ -6,7 +6,7 @@ library(dplyr)
 
 
 # read in the dataset
-rl_df <- read.csv("~/Desktop/games_by_teams.csv")
+rl_df <- read.csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_teams.csv")
 
 
 # Create a dataset with all of the diff variables
@@ -50,14 +50,6 @@ team_diff <- team_diff |> mutate(winner_factor =
                                    factor(winner_numeric, levels = c(1, 0)))
 
 
-# reorder the dataset so all of the non-numeric variables come before numeric:
-team_diff <- team_diff |>
-  select(game_id, team_id, team_id_orange, winner, winner_factor, 
-         winner_numeric, team_slug, team_slug_orange, team_name, 
-         team_name_orange, team_region, team_region_orange, ends_with("_diff"), 
-         everything())
-
-
 # only keep rows where shooting percentage difference is less than absolute 
 # value of 100, because it is not possible for anything to be outside of this
 team_diff <- team_diff |> filter(core_shooting_percentage_diff >= -100)
@@ -68,8 +60,22 @@ team_diff <- team_diff |> filter(core_shooting_percentage_diff <= 100)
 team_diff <- na.omit(team_diff)
 
 
+# To make train/test split more fair, keep all series in one or the other,
+# not both, by creating a series_id
+team_diff <- team_diff |> 
+  mutate(series_id = paste(team_id, team_id_orange, sep = "_"))
+
+
+# reorder the dataset so all of the non-numeric variables come before numeric:
+team_diff <- team_diff |>
+  select(series_id, game_id, team_id, team_id_orange, winner, winner_factor, 
+         winner_numeric, team_slug, team_slug_orange, team_name, 
+         team_name_orange, team_region, team_region_orange, ends_with("_diff"), 
+         everything())
+
+
 # Output the csv file for team_diff dataset:
-write_csv(x = team_diff, "~/Desktop/team_diff.csv")
+write_csv(x = team_diff, "~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
 
 
 ## NOW CREATE AND TIDY RL_numeric AS SEPARATE CSV:
@@ -80,11 +86,11 @@ RL_numeric <- team_diff |> select(-c("core_goals_diff"))
 
 
 # Only keep winner and variables that are numeric:
-RL_numeric <- RL_numeric %>% select(where(is.numeric), winner)
+RL_numeric <- RL_numeric %>% select(where(is.numeric), series_id, winner_factor)
 
 
 # Create a csv file for RL_numeric dataset:
-write_csv(x = RL_numeric, "~/Desktop/RL_numeric.csv")
+write_csv(x = RL_numeric, "~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
 
 
 
