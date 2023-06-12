@@ -11,13 +11,21 @@ execute:
 ---
 
 ```{r}
+# Load in required packages and the datasets that will be used 
+# for plots and modeling
+library(tidyverse)
+library(tidymodels)
+library(tree)
 library(ggplot2)
-team_diff <- read.csv("~/Desktop/team_diff.csv")
+library(rpart)
+library(rpart.plot)
+RL_joined <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_joined.csv")
+RL_numeric <- read.csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
 ```
 
 **Project Introduction:**
 
-  Over the past decade or so, the world of esports and competitive video-gaming has seen a drastic boom in popularity. One of the most popular esports is Rocket League, which is essentially soccer played in cars. I am a fan of professional Rocket League, and I also have played the video game competitively as a member of the Esports team here at St. Lawrence.
+  Over the past decade or so, the world of esports and competitive video-gaming has seen a drastic boom in popularity. One of the most popular esports is Rocket League, which is essentially soccer played in cars. I am a fan of professional Rocket League, and I also have played the video game competitively as a member of the Esports team at St. Lawrence University.
   
   Rocket League is a video game that can be played on a PC, Xbox, PlayStation, and Nintendo Switch. Much like regular soccer, there is one ball and two goals, and you win by scoring more goals than your opponent. The game is played with a randomly assigned “blue” and “orange” team, and each player controls one rocket-powered car. There are different game modes within the game, but for the purposes of this project I will be focusing on the 3v3 game-mode, which is where the majority of competitive play and money is. Rocket League was released by Psyonix on July 7th, 2015.
   
@@ -29,6 +37,7 @@ team_diff <- read.csv("~/Desktop/team_diff.csv")
   
   Using this dataset, I created net variables by subtracting all of the blue teams’ stats from all of the orange team’s stats. I did this in order to see for which variables having more or less than your opponent would be positively associated with winning. (For example, are you more likely to win the match if your team records more or less saves than your opponent.) I utilized Lasso Regression and Random Forest models in order to try and predict whether teams would win/lose their match based on the net variables in the dataset.
 
+  Additionally, I wanted to investigate whether of not different team play styles were consistently associated with winning/losing. To tackle this task, I used a dataset of individual player statistics on the same matches that I had used for team data. I wanted to see if teams who had certain players in different roles performed noticeably better/worse than teams who didn't play very positionally. (If one team had a "goalie" player, his saves would be noticeably higher than his teammates, a "goal-scorer" would have higher shots and goals than his teammates, etc.). To tackle this task, within each game for each team I calculated standard deviation variables for all of the variables in the dataset. 
 
 
 **Investigative Plots:**
@@ -38,19 +47,52 @@ team_diff <- read.csv("~/Desktop/team_diff.csv")
 
 **core_shooting_percentage_diff plotted against winner:**
 ```{r}
-ggplot(data = team_diff, aes(x = winner, 
+ggplot(data = RL_joined, aes(x = winner.x, 
                              y = core_shooting_percentage_diff)) + 
-  geom_boxplot(fill="coral1",colour ="black")
+  geom_boxplot(fill="coral1",colour ="black") +
+  labs(y= "Shooting Percentage Difference", x = "Winner")
 ```
 
 **postioning_time_behind_ball_diff plotted against winner:**
 ```{r}
-ggplot(data = team_diff, aes(x = winner, 
+ggplot(data = RL_joined, aes(x = winner.x, 
                              y = positioning_time_behind_ball_diff)) + 
-  geom_boxplot(fill="coral1",colour ="black")
+  geom_boxplot(fill="coral1",colour ="black") +
+  labs(y= "Positioning Time Behind Ball Difference", x = "Winner")
 ```
 
 I expected shooting percentage to be a strong predictor but I was surprised to find such a high number of teams that shot with 70-80% higher accuracy than their opponent still managed to lose games. I was also surprised to find such a clear correlation between spending more time behind the ball being so positively associated with winning games. But, it does make sense that if the ball spends more time near your opponent’s goal rather than your goal, that would lead to positive results.
 
+**Random Forest Results:**
 
+I started my Random Forest model by making a random train/test split of the data. However, in case there was any chance that the model was yielding higher results because certain series were partially in the training dataset and partially in the test dataset, I created a series_id variable by combining the names of the two teams in the series. When I did my train/test data split, I grouped by series_id so that every series would be entirely in the train or entirely in the test set.
+
+Then, using the dataset with all of the net variables as well as all of the standard deviation variables, I created a tree to predict the winner of each series:
+
+```{r}
+set.seed(993)
+RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.5)
+RL_train <- training(RL_splits)
+RL_test <- testing(RL_splits)
+RL_resamples <- group_vfold_cv(RL_train, v = 5, group = series_id)
+RL_train_tree <- tree(winner_factor ~ . - series_id, data = RL_train)
+winner_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
+rpart.plot(winner_tree)
+```
+
+The model identified the best possible tree to include a three predictor subset of the dataset. The three variables selected were all net variables: core_shooting_percentage_diff, core_shots_diff, and positioning_time_behind_ball_diff and none of the standard deviation variables were selected.
+
+The next step was to get predictions based on the model trained on the RL_train data, and use that to predict game outcome of the games in the RL_test data.
+
+```{r}
+predictions <- predict(RL_train_tree, newdata = RL_test)
+# if more than 50% likely 
+predictions <- if_else(predictions > 0.5, 
+                       true = TRUE, 
+                       false = FALSE)
+accuracy <- mean(predictions == RL_test$winner_factor)
+accuracy
+```
+
+The model correctly identified the winner of the games in the test set with 95.537% accuracy.
 

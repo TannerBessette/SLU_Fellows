@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.0.36">
+<meta name="generator" content="quarto-1.3.353">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -11,10 +11,15 @@
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-span.underline{text-decoration: underline;}
-div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
 </style>
 
 
@@ -48,15 +53,13 @@ ul.task-list{list-style: none;}
 <div class="quarto-title-meta">
 
     
+  
     
   </div>
   
 
 </header>
 
-<div class="cell">
-
-</div>
 <p><strong>Project Introduction:</strong></p>
 <p>Over the past decade or so, the world of esports and competitive video-gaming has seen a drastic boom in popularity. One of the most popular esports is Rocket League, which is essentially soccer played in cars. I am a fan of professional Rocket League, and I also have played the video game competitively as a member of the Esports team here at St.&nbsp;Lawrence.</p>
 <p>Rocket League is a video game that can be played on a PC, Xbox, PlayStation, and Nintendo Switch. Much like regular soccer, there is one ball and two goals, and you win by scoring more goals than your opponent. The game is played with a randomly assigned “blue” and “orange” team, and each player controls one rocket-powered car. There are different game modes within the game, but for the purposes of this project I will be focusing on the 3v3 game-mode, which is where the majority of competitive play and money is. Rocket League was released by Psyonix on July 7th, 2015.</p>
@@ -64,6 +67,7 @@ ul.task-list{list-style: none;}
 <p>Much like with popular sports such as baseball and football, there is a growing analytical side for assessing performance of some of the most popular esports. These are used to help strategize, coach, and improve competitive gamers’ performances. While analytics are useful to some competitive video games, Rocket League is a relatively new esport, and the statistical side of the game is widely unexplored. As both a fan and a player of Rocket League, and somebody with an interest in statistics and data science in general, I was curious to see if statistical/machine learning algorithms could be applied to predicting game outcomes (whether the team wins or loses the game). These findings could potentially help form different strategies among professional teams and could even help coaches to decide what areas to put more of a focus on going into games.</p>
 <p>For this project, I only explored the three player vs.&nbsp;three player game-mode and looked at a dataset collected on the main professional competition that runs throughout the year; RLCS (Rocket League Championship Series). All of the data was obtained using octane.gg and ballchasing.com and spans over the course of multiple RLCS events throughout the 2021-2022 season. The dataset includes information on the teams in the match, team statistics (such as saves, assists, shots, etc.), boost statistics (boost used, boost stolen, time spent without boost, etc.), and movement statistics (time spent moving slow, time spent in each team’s half, time spent in air, etc.). Each game in the dataset had two rows, one for the statistics for the losing team and one for the statistics of the winning team.</p>
 <p>Using this dataset, I created net variables by subtracting all of the blue teams’ stats from all of the orange team’s stats. I did this in order to see for which variables having more or less than your opponent would be positively associated with winning. (For example, are you more likely to win the match if your team records more or less saves than your opponent.) I utilized Lasso Regression and Random Forest models in order to try and predict whether teams would win/lose their match based on the net variables in the dataset.</p>
+<p>Additionally, I wanted to investigate whether of not different team play styles were consistently associated with winning/losing. To tackle this task, I used a dataset of individual player statistics on the same matches that I had used for team data. I wanted to see if teams who had certain players in different roles performed noticeably better/worse than teams who didn’t play very positionally. (If one team had a “goalie” player, his saves would be noticeably higher than his teammates, a “goal-scorer” would have higher shots and goals than his teammates, etc.). To tackle this task, within each game for each team I calculated standard deviation variables for all of the variables in the dataset.</p>
 <p><strong>Investigative Plots:</strong> Before creating any models to try to predict game outcome, I did some exploratory plotting of different individual variables in order to get an idea of what variables may have strong correlation with winning games. Unfortunately, out of the 17 variables that I investigated, the majority did not appear to have strong correlation with winning games. However, there were some interesting observations that I made; one in particular that surprised me was that movement speed appears to have little to no correlation to match outcome. As a player myself, we are always coached that keeping your speed as high as possible around the field is vital in order to become a high level player. But, in this dataset of only professional matches, that does not appear to be the case.</p>
 <p>Two variables to note that provided some clear correlation to game outcome were “core_shooting_percentage_diff” (difference in percentage of shots that were “on goal”), and “positioning_time_behind_ball_diff” (difference in amount of time each team spent goal side of the ball).</p>
 <p><strong>core_shooting_percentage_diff plotted against winner:</strong></p>
@@ -79,6 +83,22 @@ ul.task-list{list-style: none;}
 </div>
 </div>
 <p>I expected shooting percentage to be a strong predictor but I was surprised to find such a high number of teams that shot with 70-80% higher accuracy than their opponent still managed to lose games. I was also surprised to find such a clear correlation between spending more time behind the ball being so positively associated with winning games. But, it does make sense that if the ball spends more time near your opponent’s goal rather than your goal, that would lead to positive results.</p>
+<p><strong>Random Forest Results:</strong></p>
+<p>I started my Random Forest model by making a random train/test split of the data. However, in case there was any chance that the model was yielding higher results because certain series were partially in the training dataset and partially in the test dataset, I created a series_id variable by combining the names of the two teams in the series. When I did my train/test data split, I grouped by series_id so that every series would be entirely in the train or entirely in the test set.</p>
+<p>Then, using the dataset with all of the net variables as well as all of the standard deviation variables, I created a tree to predict the winner of each series.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="RL_Write_Up_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The model identified the best possible tree to include three predictor subset of the model. The three variables selected were all net variables: core_shooting_percentage_diff, core_shots_diff, and positioning_time_behind_ball_diff and none of the standard deviation variables were selected.</p>
+<p>The next step was to get predictions based on the model trained on the RL_train data, and use that to predict game outcome of the games in the RL_test data.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9553776</code></pre>
+</div>
+</div>
+<p>The model correctly identified the winner of the games in the test set with 95.537% accuracy.</p>
 
 </main>
 <!-- /main column -->
@@ -109,9 +129,23 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     icon: icon
   };
   anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
   const clipboard = new window.ClipboardJS('.code-copy-button', {
-    target: function(trigger) {
-      return trigger.previousElementSibling;
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
     }
   });
   clipboard.on('success', function(e) {
@@ -123,7 +157,24 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     button.classList.add('code-copy-button-checked');
     var currentTitle = button.getAttribute("title");
     button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
     setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
       button.setAttribute("title", currentTitle);
       button.classList.remove('code-copy-button-checked');
     }, 1000);
@@ -151,31 +202,136 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   for (var i=0; i<noterefs.length; i++) {
     const ref = noterefs[i];
     tippyHover(ref, function() {
-      let href = ref.getAttribute('href');
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
       return note.innerHTML;
     });
   }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
   var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
   for (var i=0; i<bibliorefs.length; i++) {
     const ref = bibliorefs[i];
-    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
-    tippyHover(ref, function() {
-      var popup = window.document.createElement('div');
-      cites.forEach(function(cite) {
-        var citeDiv = window.document.createElement('div');
-        citeDiv.classList.add('hanging-indent');
-        citeDiv.classList.add('csl-entry');
-        var biblioDiv = window.document.getElementById('ref-' + cite);
-        if (biblioDiv) {
-          citeDiv.innerHTML = biblioDiv.innerHTML;
-        }
-        popup.appendChild(citeDiv);
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
       });
-      return popup.innerHTML;
-    });
+    }
   }
 });
 </script>

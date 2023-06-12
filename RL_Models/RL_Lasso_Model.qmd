@@ -10,11 +10,7 @@ RL_numeric <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
 ```
 
 ```{r}
-RL_numeric <- RL_numeric |> select(-c("core_goals_diff",
-                                      "core_assists_diff",
-                                      "core_score_diff",
-                                      "winner_numeric",
-                                      "series_id"))
+RL_numeric <- RL_numeric |> select(-c("series_id"))
 ```
 
 ```{r}
@@ -82,6 +78,7 @@ accuracy
 ```
 
 The Lasso model classified game outcome with 74.971% accuracy.
+
 
 
 

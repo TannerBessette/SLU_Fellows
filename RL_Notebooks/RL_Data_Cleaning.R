@@ -115,13 +115,17 @@ write_csv(x = RL_joined, "~/Desktop/SLU_Fellows/RL_Datasets/RL_joined.csv")
 
 ## NOW CREATE AND TIDY RL_numeric AS SEPARATE CSV:
 
-# Since this is the dataset we are using for binary (1/0) game outcome,
-# need to remove goal_diff as a predictor:
-RL_numeric <- RL_joined |> select(-c("core_goals_diff"))
-
-
 # Only keep winner and variables that are numeric:
 RL_numeric <- RL_joined %>% select(where(is.numeric), series_id, winner_factor)
+
+
+# Remove some numeric predictors that have obvious correlation to game outcome:
+RL_numeric <- RL_numeric %>% select(-c("core_goals_diff",
+                                       "core_assists_diff",
+                                       # keeping winnner_factor instead 
+                                       # of winner numeric
+                                       "winner_numeric",
+                                       "core_score_diff"))
 
 
 # Create a csv file for RL_numeric dataset:
