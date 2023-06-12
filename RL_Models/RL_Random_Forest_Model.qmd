@@ -3,18 +3,7 @@ title: "Random Forest Model to Predict RL Game Outcome"
 format: html
 ---
 
-Install and load in necessary packages:
-```{r}
-install.packages("janitor")
-install.packages("tree")
-```
-
-```{r}
-install.packages("rpart")
-install.packages("rpart.plot")
-```
-
-
+Load in necessary libraries:
 ```{r}
 library(janitor)
 library(tree)
@@ -25,7 +14,8 @@ library(dplyr)
 
 Read in dataset:
 ```{r}
-RL_numeric <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
+library(here)
+RL_numeric <- read_csv("RL_Datasets/RL_numeric.csv")
 ```
 
 

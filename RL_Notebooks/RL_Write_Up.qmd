@@ -82,7 +82,7 @@ rpart.plot(winner_tree)
 
 The model identified the best possible tree to include a three predictor subset of the dataset. The three variables selected were all net variables: core_shooting_percentage_diff, core_shots_diff, and positioning_time_behind_ball_diff and none of the standard deviation variables were selected.
 
-The next step was to get predictions based on the model trained on the RL_train data, and use that to predict game outcome of the games in the RL_test data.
+The next step was to get predictions based on the model trained on the RL_train data, and use that to predict game outcome of the games in the RL_test data:
 
 ```{r}
 predictions <- predict(RL_train_tree, newdata = RL_test)

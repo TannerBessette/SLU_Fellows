@@ -3,20 +3,7 @@ title: "Lasso Model to Predict RL Game Outcome"
 format: html
 ---
 
-
-Fitting a Lasso model to RL dataset:
-```{r}
-RL_numeric <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
-```
-
-```{r}
-RL_numeric <- RL_numeric |> select(-c("series_id"))
-```
-
-```{r}
-view(RL_numeric)
-```
-
+Load in necessary libraries:
 ```{r}
 library(tidyverse)
 library(tidymodels)
@@ -24,10 +11,21 @@ library(dplyr)
 ```
 
 
+Fitting a Lasso model to RL dataset:
+```{r}
+library(here)
+RL_numeric_df <- read_csv("RL_Datasets/RL_numeric.csv")
+```
+
+```{r}
+RL_numeric_df <- RL_numeric_df |> select(-c("series_id"))
+```
+
+
 Split the data into train/test split:
 ```{r}
 set.seed(993)
-RL_splits <- initial_split(RL_numeric, prop = 0.5)
+RL_splits <- initial_split(RL_numeric_df, prop = 0.5)
 RL_train <- training(RL_splits)
 RL_test <- testing(RL_splits)
 ```
@@ -48,7 +46,7 @@ RL_workflow <- workflow() %>%
 
 ```{r}
 set.seed(5)
-RL_resamples <- vfold_cv(RL_numeric, v = 10)
+RL_resamples <- vfold_cv(RL_numeric_df, v = 10)
 
 RL_tune_res <-
   tune_grid(RL_workflow, resamples = RL_resamples,
@@ -60,7 +58,7 @@ autoplot(RL_tune_res)
 RL_workflow_final <-
   finalize_workflow(RL_workflow, select_best(RL_tune_res, metric = "rmse"))
 RL_fit <- fit(RL_workflow_final, data = RL_train)
-results <- fit(RL_workflow_final, data = RL_numeric) %>%
+results <- fit(RL_workflow_final, data = RL_numeric_df) %>%
   tidy() %>%
   filter(estimate != 0)
 print(results, n = 42)
