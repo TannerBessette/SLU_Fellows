@@ -1,0 +1,29 @@
+---
+title: "Reprex_CSV_Factor"
+format: html
+---
+
+Load in necessary packages:
+```{r}
+library(here)
+library(tidyverse)
+```
+
+Create a tibble for reprex:
+```{r}
+test_df <- tibble(xvar = c(800, 1000, 12, 156, 34, 579, 97, 900),
+                   yvar = c(1, 0, 1, 0, 0, 0, 1, 1))
+test_df
+```
+
+Create a csv file to load in to simulate issue that is occurring:
+```{r}
+write_csv(x = test_df, "~/Desktop/SLU_Fellows/RL_Datasets/test_df.csv")
+```
+
+Here is where the problem occurs:
+```{r}
+test_df <- read_csv(here("RL_Datasets/test_df.csv"), 
+        col_types = cols(yvar = col_factor()))
+```
+
