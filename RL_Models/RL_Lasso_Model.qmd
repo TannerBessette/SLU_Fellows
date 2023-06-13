@@ -14,7 +14,7 @@ library(dplyr)
 Fitting a Lasso model to RL dataset:
 ```{r}
 library(here)
-RL_numeric_df <- read_csv("RL_Datasets/RL_numeric.csv")
+RL_numeric_df <- read_csv(here("RL_Datasets/RL_numeric.csv"))
 ```
 
 ```{r}
