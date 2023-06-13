@@ -19,8 +19,9 @@ library(tree)
 library(ggplot2)
 library(rpart)
 library(rpart.plot)
-RL_joined <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_joined.csv")
-RL_numeric <- read.csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
+library(here)
+RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv"))
+RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
 ```
 
 **Project Introduction:**

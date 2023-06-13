@@ -1,0 +1,135 @@
+---
+title: "RL_RF_Variables_in_Control_of"
+format: html
+---
+
+
+Load in necessary libraries:
+```{r}
+library(janitor)
+library(tree)
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+```
+
+Read in dataset:
+```{r}
+library(here)
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"))
+```
+
+Remove variables that aren't fully in players' control:
+```{r}
+RL_control <- RL_numeric |> select(-c(1:5, 40, 41))
+```
+
+
+Build Random Forest Model:
+```{r}
+set.seed(993)
+RL_splits <- group_initial_split(RL_control, group = series_id, prop = 0.5)
+RL_train <- training(RL_splits)
+RL_test <- testing(RL_splits)
+
+RL_resamples <- group_vfold_cv(RL_train, v = 5, group = series_id)
+
+RL_train_tree <- tree(winner_factor ~ . - series_id, data = RL_train)
+
+plot(RL_train_tree)
+text(RL_train_tree)
+```
+
+
+Get predictions and calculate model classification accuracy:
+```{r}
+predictions <- predict(RL_train_tree, newdata = RL_test)
+# if more than 50% likely 
+predictions <- if_else(predictions > 0.5, 
+                       true = TRUE, 
+                       false = FALSE)
+accuracy <- mean(predictions == RL_test$winner_factor)
+accuracy
+```
+
+The Random Forest model predicted game outcome with 95.537% accuracy.
+
+
+
+Cleaner visual of the random forest tree output:
+```{r}
+library(rpart)
+library(rpart.plot)
+clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
+clean_tree
+rpart.plot(clean_tree)
+```
+
+
+Lasso in control:
+
+```{r}
+RL_numeric_df <- RL_control |> select(-c("series_id"))
+```
+
+
+Split the data into train/test split:
+```{r}
+set.seed(993)
+RL_splits <- initial_split(RL_numeric_df, prop = 0.5)
+RL_train <- training(RL_splits)
+RL_test <- testing(RL_splits)
+```
+
+```{r}
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet", family = "binomial")
+
+RL_recipe <- 
+  recipe(winner_factor ~ ., 
+         data = RL_train) %>%
+  step_normalize(all_predictors())
+
+RL_workflow <- workflow() %>%
+  add_model(lasso_spec) %>%
+  add_recipe(RL_recipe)
+```
+
+```{r}
+set.seed(5)
+RL_resamples <- vfold_cv(RL_numeric_df, v = 10)
+
+RL_tune_res <-
+  tune_grid(RL_workflow, resamples = RL_resamples,
+            grid = grid_regular(penalty(range = c(-1, 0)), levels = 50))
+autoplot(RL_tune_res)
+```
+
+```{r}
+RL_workflow_final <-
+  finalize_workflow(RL_workflow, select_best(RL_tune_res, metric = "rmse"))
+RL_fit <- fit(RL_workflow_final, data = RL_train)
+results <- fit(RL_workflow_final, data = RL_numeric_df) %>%
+  tidy() %>%
+  filter(estimate != 0)
+print(results, n = 42)
+```
+
+
+Evaluate model:
+```{r}
+Lasso_predictions <- predict(RL_fit, new_data = RL_test)
+Lasso_predictions <- if_else(Lasso_predictions > 0.5, 
+                       true = TRUE, 
+                       false = FALSE)
+accuracy <- mean(Lasso_predictions == RL_test$winner_factor)
+accuracy
+```
+
+The Lasso model classified game outcome with 74.971% accuracy.
+
+
+
+
+
+

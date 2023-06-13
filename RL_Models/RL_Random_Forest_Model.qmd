@@ -15,14 +15,15 @@ library(dplyr)
 Read in dataset:
 ```{r}
 library(here)
-RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"))
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
 ```
 
 
 Build Random Forest Model:
 ```{r}
 set.seed(993)
-RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.5)
+RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.8)
 RL_train <- training(RL_splits)
 RL_test <- testing(RL_splits)
 
@@ -48,6 +49,9 @@ accuracy
 
 The Random Forest model predicted game outcome with 95.537% accuracy.
 
+```{r}
+class(team_diff$winner_factor)
+```
 
 
 Cleaner visual of the random forest tree output:
