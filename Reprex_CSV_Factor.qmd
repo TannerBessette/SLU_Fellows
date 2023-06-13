@@ -18,12 +18,13 @@ test_df
 
 Create a csv file to load in to simulate issue that is occurring:
 ```{r}
-write_csv(x = test_df, "~/Desktop/SLU_Fellows/RL_Datasets/test_df.csv")
+write_csv(x = test_df, here("RL_Datasets/test_df.csv"))
 ```
 
 Here is where the problem occurs:
 ```{r}
 test_df <- read_csv(here("RL_Datasets/test_df.csv"), 
-        col_types = cols(yvar = col_factor()))
+        col_types = cols(yvar = readr::col_factor()))
+test_df
 ```
 
