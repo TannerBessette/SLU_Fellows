@@ -1,12 +1,12 @@
 ---
-title: "Write_Up"
-format: html
+title: "Predicting Rocket League Game Outcome Through Statistical Modeling"
 execute: 
   echo: false
   warning: false
+format: 
   html:
-    fig-height: 2
-    theme: darkly
+    fig-height: 5
+    theme: quartz
     self-contained: true
 ---
 
@@ -19,6 +19,7 @@ library(tree)
 library(ggplot2)
 library(rpart)
 library(rpart.plot)
+library(knitr)
 library(here)
 RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv"))
 RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
@@ -26,11 +27,11 @@ RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
 
 **Project Introduction:**
 
-  Over the past decade or so, the world of esports and competitive video-gaming has seen a drastic boom in popularity. One of the most popular esports is Rocket League, which is essentially soccer played in cars. I am a fan of professional Rocket League, and I also have played the video game competitively as a member of the Esports team at St. Lawrence University.
+  Over the past decade, the world of esports and competitive video-gaming has seen a drastic boom in popularity. One of the most popular esports is Rocket League, which is essentially soccer played in cars. I am a fan of professional Rocket League, and I also have played the video game competitively as a member of the Esports team at St. Lawrence University.
   
-  Rocket League is a video game that can be played on a PC, Xbox, PlayStation, and Nintendo Switch. Much like regular soccer, there is one ball and two goals, and you win by scoring more goals than your opponent. The game is played with a randomly assigned “blue” and “orange” team, and each player controls one rocket-powered car. There are different game modes within the game, but for the purposes of this project I will be focusing on the 3v3 game-mode, which is where the majority of competitive play and money is. Rocket League was released by Psyonix on July 7th, 2015.
+  Rocket League is a video game that can be played on a PC, Xbox, PlayStation, and Nintendo Switch. Much like regular soccer, there is one ball and two goals, and you win by scoring more goals than your opponent. The game is played with a randomly assigned “blue” and “orange” team, and each player controls one rocket-powered car. There are different game modes within the game, but for the purposes of this project I will be focusing on the 3v3 game-mode, which is where the majority of competitive play and money made on the esport is. Rocket League was released by Psyonix on July 7th, 2015.
   
-  Despite being released in 2015, the competitive and professional side of the video game is still growing to this day. In 2022, the total prize pool given out by Psyonix alone reached $6,000,000, and there are other non-Psyonix hosted tournaments with cash prizes as well. This past year the video game has expanded to new regions, including Asia-Pacific North, Asia-Pacific South, and Middle East/North Africa. Players are constantly pushing the skill ceiling to re-define what it means to be the best in the world. With this comes constantly changing strategy and tactics and makes for an even more thrilling viewer experience.
+  Despite being released in 2015, the competitive and professional side of the video game is still growing to this day. In 2022, the total prize pool given out by Psyonix alone reached $6,000,000, and there are other non-Psyonix hosted tournaments with cash prizes as well. This past year the video game has expanded to new regions, including Asia-Pacific North, Asia-Pacific South, and Middle East/North Africa. Players are constantly pushing the skill ceiling to re-define what it means to be the best in the world. With these improvments come constantly changing strategy and tactics that make for an even more thrilling viewer experience.
   
   Much like with popular sports such as baseball and football, there is a growing analytical side for assessing performance of some of the most popular esports. These are used to help strategize, coach, and improve competitive gamers’ performances. While analytics are useful to some competitive video games, Rocket League is a relatively new esport, and the statistical side of the game is widely unexplored. As both a fan and a player of Rocket League, and somebody with an interest in statistics and data science in general, I was curious to see if statistical/machine learning algorithms could be applied to predicting game outcomes (whether the team wins or loses the game). These findings could potentially help form different strategies among professional teams and could even help coaches to decide what areas to put more of a focus on going into games.
   
@@ -66,9 +67,26 @@ I expected shooting percentage to be a strong predictor but I was surprised to f
 
 **Random Forest Results:**
 
-I started my Random Forest model by making a random train/test split of the data. However, in case there was any chance that the model was yielding higher results because certain series were partially in the training dataset and partially in the test dataset, I created a series_id variable by combining the names of the two teams in the series. When I did my train/test data split, I grouped by series_id so that every series would be entirely in the train or entirely in the test set.
+A random forest model uses a subset of predictor variables from the dataset and creates a collection of "trees" to make its prediction. In this model, the predictor variables the model utilizes are core_shooting_percentage_diff, core_shots_diff, and positioning_time_behind_ball_diff. Each branch gives a variable and a number. When making predictions, we start at the top of the tree and move our way down. For each individual game the model predicts for, if each variable is greater than the given number, it continues down the tree to the left, and if it is less, it continues down the tree to the right.
 
-Then, using the dataset with all of the net variables as well as all of the standard deviation variables, I created a tree to predict the winner of each series:
+Let's follow this process along using an example from my model. Taking one random game from the dataset, the random forest model will analyze if the shooting percentage difference is greater than/equal to -1.3, or if it is less than -1.3. If it is greater than -1.3, we follow the model down to the left and next examine if the core shot difference is greater than/equal to or less than -3. Had the shooting percentage difference in the game had been less than -1.3, we would have followed the tree down to the right side and examined how the core shot difference compared to 5. The model continues this process all the way down to the last leg where we classify the game as a win or a loss. In this circumstance, a 1 at the top of the bottom bubble represents a predicted win, and a 0 represents a predicted loss. 
+
+The random forest approach can be used for two main purposes: classification or regression. Since the goal of my model was to classify games as wins or losses, I used the classification approach.
+
+I started my Random Forest model by making a random train/test split of the data. However, in case there was any chance that the model was yielding higher results because certain series were partially in the training dataset and partially in the test dataset, I created a series_id variable by combining the names of the two teams in the series. When I did my train/test data split, I grouped by series_id so that every series would be entirely in the train set or entirely in the test set.
+
+An important thing to understand in the context of random forest (and statistical modeling in general) is the concept of bootstrapping. Bootstrapping is essentially sampling the set-aside training data with replacement. This process is useful for understanding bias and variance within the dataset. (Kaggle source)
+
+The random forest approach makes use of bagging when creating its model. Bagging starts with creating different training subsets with replacement randomly (bootstrapping).(simplilearn source) Then, a base model is created and fit to each of these subsets of the training data. These models run independently of each other, and final predictions are determined by combining the predictions from all of the models. (Kaggle source) Bagging is one of the advantages of random forest models, because it reduces variations in predictions in the process of combining the results of multiple decision trees on different samples of the training data (edureka source)
+
+```{r}
+knitr::include_graphics(here("Images/Bootstrapping_Bagging_img.png"))
+## source: https://www.simplilearn.com/tutorials/machine-learning-tutorial/bagging-in-machine-learning 
+```
+
+**_Important side note:_** Bagging is relatively similar to boosting, but they do distinctly differ. The main difference between bagging and boosting is that bagging is performed with all sub-models being completely independent of each other during the process, while boosting is sequential. The goal of boosting is to combine a set of weak predictors into a strong predictor to minimize the model's training error. This is done by having each of the samples of training data created used to fit a model, and then the process continues sequentially. (IBM source) By training sequentially, the model gets stronger and stronger because it attempts to make up for the weaknesses of the model before it. The important thing to note in boosting is that each succeeding model is dependent on the previous model. (Kaggle source) The main difference between gradient boosting modeling and random forest modeling is that the gradient boosting models follow this process of being built additively one after another. (leonlok.uk source) 
+
+Using the dataset with all of the net variables as well as all of the standard deviation variables, I created a random forest model to predict the winner of each game:
 
 ```{r}
 set.seed(993)
@@ -81,9 +99,9 @@ winner_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
 rpart.plot(winner_tree)
 ```
 
-The model identified the best possible tree to include a three predictor subset of the dataset. The three variables selected were all net variables: core_shooting_percentage_diff, core_shots_diff, and positioning_time_behind_ball_diff and none of the standard deviation variables were selected.
+The test dataset is the rest of the data that was set aside separate from the data used to train the model. After we have built the model on the training data, it can be applied to the test data to get a more precise idea of how strong our model is. For this project, the random forest appraoch identified the best possible model to include a three predictor subset of the dataset. The three variables selected were all net variables: core_shooting_percentage_diff, core_shots_diff, and positioning_time_behind_ball_diff, and none of the standard deviation variables were selected.
 
-The next step was to get predictions based on the model trained on the RL_train data, and use that to predict game outcome of the games in the RL_test data:
+The final step in this process was to get predictions on the game outcome of all the games in the RL_test dataset, and see how accurately the model performed:
 
 ```{r}
 predictions <- predict(RL_train_tree, newdata = RL_test)
