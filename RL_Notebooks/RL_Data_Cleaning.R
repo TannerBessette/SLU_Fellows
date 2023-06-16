@@ -74,18 +74,31 @@ team_diff <- team_diff |>
 games_by_players <- 
   read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
 
-
 #Calculate the team's standard deviations within each variable within each game:
 team_std <- games_by_players |>
   group_by(game_id, team_id) |>
   # calculate the standard deviations for each team for each numeric variable
-  mutate(across(where(is.numeric), \(x) sd(x, na.rm =TRUE),
-                .names = "sd_{.col}")) |>
-  ungroup() |>
-  # keep only match_id, team_id, and SDs 
-  select(game_id, team_id, winner, starts_with("sd_")) |>
-  # Only keep one of each row (currently 3 identical for each)
-  unique()
+  summarise(across(where(is.numeric), \(x) sd(x,
+                                              na.rm =TRUE),
+                   .names = "sd_{.col}"),
+            color = sample(color, size = 1),
+            winner = sample(winner, size = 1)) |>
+  ungroup() 
+
+
+team_std <- team_std |> select(game_id, color, everything()) |>
+  pivot_wider(id_cols = game_id, 
+              names_from = color,
+              values_from = -c(1, 2)) |>
+  # keep only game_id, team_id, and SDs 
+  select(game_id, winner_blue, starts_with("sd_")) 
+
+team_std <- team_std |> 
+  mutate(across(where(is.numeric) & ends_with("_blue"),
+                .names = "{col}_diff") -
+           across(where(is.numeric) & ends_with("_orange"))) |>
+  # keep only diff variables, and game_id
+  select(game_id, ends_with("_diff")) 
 
 
 # Merge this dataset with team_diff:
@@ -118,17 +131,6 @@ RL_numeric <- RL_numeric %>% select(-c("core_goals_diff",
 
 # Create a csv file for RL_numeric dataset:
 write_csv(x = RL_numeric, "~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
-
-
-
-
-
-
-
-
-
-
-
 
 
 
