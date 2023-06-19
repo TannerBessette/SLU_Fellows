@@ -12,6 +12,11 @@ library(tidymodels)
 library(dplyr)
 ```
 
+```{r}
+library(caret)
+```
+
+
 Read in dataset:
 ```{r}
 library(here)
@@ -38,20 +43,18 @@ text(RL_train_tree)
 
 Get predictions and calculate model classification accuracy:
 ```{r}
+RL_fit <- fit(RL_workflow, data = RL_train)
+RL_predictions <- predict(RL_fit, new_data = RL_test)
 predictions <- predict(RL_train_tree, newdata = RL_test)
 # if more than 50% likely 
 predictions <- if_else(predictions > 0.5, 
                        true = TRUE, 
                        false = FALSE)
-accuracy <- mean(predictions == RL_test$winner_factor)
+accuracy <- mean(RL_predictions == RL_test$winner_factor)
 accuracy
 ```
 
 The Random Forest model predicted game outcome with 95.537% accuracy.
-
-```{r}
-class(team_diff$winner_factor)
-```
 
 
 Cleaner visual of the random forest tree output:
@@ -62,6 +65,5 @@ clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
 clean_tree
 rpart.plot(clean_tree)
 ```
-
 
 

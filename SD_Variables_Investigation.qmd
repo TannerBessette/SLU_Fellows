@@ -1,0 +1,60 @@
+---
+title: "SD_Variables_Investigation"
+format: html
+---
+
+Load in necessary libraries:
+```{r}
+library(janitor)
+library(tree)
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(ggplot2)
+library(GGally)
+```
+
+Read in dataset:
+```{r}
+library(here)
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
+```
+
+```{r}
+# column 136 is winner_factor
+ggpairs(data = RL_numeric, columns = c(136, 46, 47, 48, 49, 50), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+```{r}
+ggpairs(data = RL_numeric, columns = c(136, 51, 52, 53, 54, 55), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+```{r}
+ggpairs(data = RL_numeric, columns = c(136, 56, 57, 58, 59, 60), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+
+
+```{r}
+ncol <- ncol(RL_numeric)
+ncol
+```
+
+
+see what random forest model would look like with just sd variables:
+```{r}
+library(rpart)
+library(rpart.plot)
+clean_tree <- rpart(winner_blue ~ . - game_id, data = team_std)
+clean_tree
+rpart.plot(clean_tree)
+```
+
+
+
+
+

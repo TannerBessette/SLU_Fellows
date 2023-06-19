@@ -70,6 +70,7 @@ team_diff <- team_diff |>
 
 
 
+
 # Load in the players dataset:
 games_by_players <- 
   read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
@@ -98,7 +99,7 @@ team_std <- team_std |>
                 .names = "{col}_diff") -
            across(where(is.numeric) & ends_with("_orange"))) |>
   # keep only diff variables, and game_id
-  select(game_id, ends_with("_diff")) 
+  select(game_id, winner_blue, ends_with("_diff")) 
 
 
 # Merge this dataset with team_diff:
