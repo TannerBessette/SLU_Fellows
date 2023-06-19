@@ -1,0 +1,32 @@
+---
+title: "RL_Logistic"
+format: html
+---
+
+Libraries/Packages:
+```{r}
+library(janitor)
+library(tree)
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(caret)
+library(ranger)
+library(vip)
+```
+
+Read in dataset:
+```{r}
+library(here)
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
+```
+
+Fit a glm:
+```{r}
+RL_numeric$winner_factor <- as.numeric(as.character(RL_numeric$winner_factor))
+RL_log <- glm(winner_factor ~ . - series_id, data = RL_numeric)
+summary(RL_log)
+```
+
+

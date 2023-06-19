@@ -10,10 +10,9 @@ library(tree)
 library(tidyverse)
 library(tidymodels)
 library(dplyr)
-```
-
-```{r}
 library(caret)
+library(ranger)
+library(vip)
 ```
 
 
@@ -65,5 +64,65 @@ clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
 clean_tree
 rpart.plot(clean_tree)
 ```
+
+
+Build actual Random Forest model:
+```{r}
+# Preprocess the data for modelling
+RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>% 
+  step_rm(series_id) %>%
+  step_rm(core_shooting_percentage_diff) %>%
+  step_normalize(all_numeric_predictors()) 
+
+# Build a random forest model specification
+rf_spec <- rand_forest() %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_wf <- workflow() %>% 
+  add_recipe(RL_recipe) %>% 
+  add_model(rf_spec)
+
+# Fit a model
+rf_wf_fit <- rf_wf %>% 
+  fit(data = RL_train)
+
+# Make predictions on test data
+results <- RL_test %>% select(winner_factor) %>% 
+  bind_cols(rf_wf_fit %>% 
+              predict(new_data = RL_test)) %>% 
+  bind_cols(rf_wf_fit %>% 
+              predict(new_data = RL_test, type = "prob"))
+
+# Print out predictions
+results %>% 
+  slice_head(n = 10)
+```
+
+```{r}
+# get results in a confusion matrix:
+results %>% 
+  conf_mat(winner_factor, .pred_class)
+```
+
+```{r}
+(1950 + 1332)/(1950 + 1332 + 130 + 90)
+```
+
+The random forest model classified game outcome (win/loss) with 93.718% 
+accuracy.
+
+
+See the importance of variables in the random forest model:
+```{r}
+# Extract the fitted model from the workflow
+rf_wf_fit %>% 
+  extract_fit_parsnip() %>% 
+# Make VIP plot
+  vip()
+```
+
+
 
 
