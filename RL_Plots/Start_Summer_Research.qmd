@@ -11,11 +11,12 @@ library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(GGally)
+library(here)
 ```
 
 Load in the dataset:
 ```{r}
-rl_df <- read.csv("~/Desktop/games_by_teams.csv")
+rl_df <- read.csv(here("RL_Datasets/games_by_teams.csv"))
 ```
 
 View variable names in the dataset:
@@ -235,6 +236,17 @@ core_shooting_percentage_diff
 ggplot(data = team_diff, aes(x = winner, 
                              y = core_shooting_percentage_diff)) + 
   geom_boxplot(fill="coral1",colour ="black")
+```
+
+
+Plot to use in presentation on Thurs 6/22:
+```{r}
+ggpairs(data = team_diff, columns = c("winner", 
+                                      "demo_inflicted_diff",
+                                      "positioning_time_behind_ball_diff",
+                                      "core_shots_diff",
+                                      "boost_time_zero_boost_diff"), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
 ```
 
 

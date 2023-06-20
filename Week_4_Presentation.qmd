@@ -3,34 +3,102 @@ title: "Predicting Rocket League Game Outcome Through Statistical Modeling"
 author: "By Tanner Bessette"
 format:
   revealjs: 
-    theme: dracula
+    theme: moon
 ---
 
 ## Introduction/Overview of Dataset
 
--Rocket League is a car-soccer video game
+-   Rocket League is a car-soccer video game
 
--For this project, exploring the 3v3 game mode
+-   For this project, exploring the 3v3 game mode
 
--Dataset has games from RLCS 2021-2022 season
+-   103 Variables include shots taken, boost used, etc.
 
--Variables include shots taken, boost used, time spent supersonic speed, etc.
+    -   Dataset has games from RLCS 2021-2022 season
 
--103 variables total
+    -   17,797 professional games
 
--Data collected from 17,797 professional games
+## Project Goals
 
-## Random Forest Approach
+-   Get an idea of what variables are most associated with winning games
 
--Random Forest utilizes bagging when making the model
+-   Build a model to try to predict game outcome based on a subset of the variables
 
--Data is bootstrapped; creating different training subsets randomly
+-   Discover whether certain approaches or tactics are more/less associated with winning
 
--a base model is created and fit to each of these subsets of the training data
+-   Findings may be used to help strategize/coach
 
--These models run independently of each other, and final predictions are determined by combining the predictions from all of the models
+## Exploratory Plots:
 
--uses a subset of variables from dataset and creates a collection of "trees" to make its prediction
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(GGally)
+library(here)
+rl_df <- read.csv(here("RL_Datasets/games_by_teams.csv"))
+# Create a dataset with all of the diff variables
+team_diff <- rl_df |> pivot_wider(id_cols = game_id, 
+                                  names_from = color,
+                                  values_from = -c(1, 2)) |>
+  ## all diffs are blue team minus orange team
+  mutate(across(where(is.numeric) & ends_with("_blue"),
+                .names = "{col}_diff") -
+           across(where(is.numeric) & ends_with("_orange"))) |>
+  mutate(winner_numeric = if_else(winner_blue == "True",
+                                 true = 1,
+                                 false = 0)) |> ## winner is 1 for blue, 
+                                                ## 0 for orange
+  select(game_id, team_id_blue, team_id_orange, winner_numeric, 
+         ends_with("_diff"), everything())
+
+# Removing "blue" and "orange" from all of the variable names:
+old_names <- names(team_diff)
+new_names <- str_remove(old_names, pattern = "_blue") 
+names(team_diff) <- new_names
+
+# Remove some of the unnecessary variables to tidy the dataset:
+team_diff <- team_diff |> select(-c(59:154))
+
+# Remove variables that are identical to another variable or a linear 
+# combination of other variables in the dataset (and goal_diff):
+# IMPORTANT NOTE: leave goal_diff in team_diff dataset 
+                # but will remove from RL_numeric
+team_diff <- team_diff |> select(-c("boost_amount_collected_diff",
+                                    "boost_amount_stolen_diff",
+                                    "demo_taken_diff",
+                                    "winner_orange"))
+
+# create a winner_factor variable that can be used for classification problems
+team_diff <- team_diff |> mutate(winner_factor = 
+                                   as.factor(as.character(winner_numeric)))
+
+# only keep rows where shooting percentage difference is less than absolute 
+# value of 100, because it is not possible for anything to be outside of this
+team_diff <- team_diff |> filter(core_shooting_percentage_diff >= -100)
+team_diff <- team_diff |> filter(core_shooting_percentage_diff <= 100)
+
+# Remove any NA values:
+team_diff <- na.omit(team_diff)
+
+# To make train/test split more fair, keep all series in one or the other,
+# not both, by creating a series_id
+team_diff <- team_diff |> 
+  mutate(series_id = paste(team_id, team_id_orange, sep = "_"))
+
+# reorder the dataset so all of the non-numeric variables come before numeric:
+team_diff <- team_diff |>
+  select(series_id, game_id, team_id, team_id_orange, winner, winner_factor, 
+         winner_numeric, team_slug, team_slug_orange, team_name, 
+         team_name_orange, team_region, team_region_orange, ends_with("_diff"), 
+         everything())
+ggpairs(data = team_diff, columns = c("winner", 
+                                      "demo_inflicted_diff",
+                                      "positioning_time_behind_ball_diff",
+                                      "core_shots_diff",
+                                      "boost_time_zero_boost_diff"), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
 
 ## Decision Tree Example:
 
@@ -54,62 +122,20 @@ library(rpart)
 library(rpart.plot)
 clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
 rpart.plot(clean_tree)
-
 ```
 
-## Variable Importance Plot Example:
+## What I've Done So Far
 
-```{r}
-# Preprocess the data for modelling
-RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>% 
-  step_rm(series_id) %>%
-  step_rm(core_shooting_percentage_diff) %>%
-  step_normalize(all_numeric_predictors()) 
+-   Data manipulation, tidying, creating difference variables
+-   Created different models and visual representations
+-   Github and paper write-up
 
-# Build a random forest model specification
-rf_spec <- rand_forest() %>% 
-  set_engine("ranger", importance = "impurity") %>% 
-  set_mode("classification")
+## Next Steps
 
-# Bundle recipe and model spec into a workflow
-rf_wf <- workflow() %>% 
-  add_recipe(RL_recipe) %>% 
-  add_model(rf_spec)
+-   Further variable investigation and touching up on Random Forest Model
 
-# Fit a model
-rf_wf_fit <- rf_wf %>% 
-  fit(data = RL_train)
+-   Creating a poster and presentation about project
 
-# Make predictions on test data
-results <- RL_test %>% select(winner_factor) %>% 
-  bind_cols(rf_wf_fit %>% 
-              predict(new_data = RL_test)) %>% 
-  bind_cols(rf_wf_fit %>% 
-              predict(new_data = RL_test, type = "prob"))
-
-# Extract the fitted model from the workflow
-rf_wf_fit %>% 
-  extract_fit_parsnip() %>% 
-# Make VIP plot
-  vip()
-```
-
-## What I've Done and Next Steps:
-
-**What I've done so far:**
-
--Data manipulation, tidying, creating diff and sd variables
-
--Created different models and visual representations
-
--Github and paper write-up
-
-**Next steps:**
-
--Further variable investigation and touching up on Random Forest Model
-
--Creating a poster and presentation about project
-
--Complete a final draft of the project paper
+-   Complete a final draft of the project paper
 
 ## Questions?
