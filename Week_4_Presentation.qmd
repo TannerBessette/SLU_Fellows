@@ -1,23 +1,115 @@
 ---
-title: "Week_4_Presentation"
-format: revealjs
+title: "Predicting Rocket League Game Outcome Through Statistical Modeling"
+author: "By Tanner Bessette"
+format:
+  revealjs: 
+    theme: dracula
 ---
 
-## Quarto
+## Introduction/Overview of Dataset
 
-Quarto enables you to weave together content and executable code into a finished presentation. To learn more about Quarto presentations see <https://quarto.org/docs/presentations/>.
+-Rocket League is a car-soccer video game
 
-## Bullets
+-For this project, exploring the 3v3 game mode
 
-When you click the **Render** button a document will be generated that includes:
+-Dataset has games from RLCS 2021-2022 season
 
--   Content authored with markdown
--   Output from executable code
+-Variables include shots taken, boost used, time spent supersonic speed, etc.
 
-## Code
+-103 variables total
 
-When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
+-Data collected from 17,797 professional games
+
+## Random Forest Approach
+
+-Random Forest utilizes bagging when making the model
+
+-Data is bootstrapped; creating different training subsets randomly
+
+-a base model is created and fit to each of these subsets of the training data
+
+-These models run independently of each other, and final predictions are determined by combining the predictions from all of the models
+
+-uses a subset of variables from dataset and creates a collection of "trees" to make its prediction
+
+## Decision Tree Example:
 
 ```{r}
-1 + 1
+library(janitor)
+library(tree)
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(caret)
+library(ranger)
+library(vip)
+library(here)
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
+set.seed(993)
+RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.8)
+RL_train <- training(RL_splits)
+RL_test <- testing(RL_splits)
+library(rpart)
+library(rpart.plot)
+clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
+rpart.plot(clean_tree)
+
 ```
+
+## Variable Importance Plot Example:
+
+```{r}
+# Preprocess the data for modelling
+RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>% 
+  step_rm(series_id) %>%
+  step_rm(core_shooting_percentage_diff) %>%
+  step_normalize(all_numeric_predictors()) 
+
+# Build a random forest model specification
+rf_spec <- rand_forest() %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_wf <- workflow() %>% 
+  add_recipe(RL_recipe) %>% 
+  add_model(rf_spec)
+
+# Fit a model
+rf_wf_fit <- rf_wf %>% 
+  fit(data = RL_train)
+
+# Make predictions on test data
+results <- RL_test %>% select(winner_factor) %>% 
+  bind_cols(rf_wf_fit %>% 
+              predict(new_data = RL_test)) %>% 
+  bind_cols(rf_wf_fit %>% 
+              predict(new_data = RL_test, type = "prob"))
+
+# Extract the fitted model from the workflow
+rf_wf_fit %>% 
+  extract_fit_parsnip() %>% 
+# Make VIP plot
+  vip()
+```
+
+## What I've Done and Next Steps:
+
+**What I've done so far:**
+
+-Data manipulation, tidying, creating diff and sd variables
+
+-Created different models and visual representations
+
+-Github and paper write-up
+
+**Next steps:**
+
+-Further variable investigation and touching up on Random Forest Model
+
+-Creating a poster and presentation about project
+
+-Complete a final draft of the project paper
+
+## Questions?
