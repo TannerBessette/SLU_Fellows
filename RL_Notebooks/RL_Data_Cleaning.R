@@ -108,6 +108,37 @@ RL_joined <- left_join(team_diff, team_std, by = c("game_id" = "game_id"))
 # Remove rows with NAs from the dataset
 RL_joined <- na.omit(RL_joined)
 
+# Remove sd diff variables that are not in dataset as regular diff predictors
+# Also remove any predictors that don't make sense (like camera stats)
+# (also remove regular positioning_time_in_front_ball_diff because 
+# already have time behind)
+RL_joined <- RL_joined %>% select(-c("sd_core_goals_blue_diff",
+                                     "sd_core_assists_blue_diff",
+                                     "sd_core_score_blue_diff",
+                                     "sd_boost_amount_collected_blue_diff",
+                                     "sd_boost_amount_stolen_blue_diff",
+                                     starts_with("sd_boost_percent"),
+                      "sd_movement_avg_powerslide_duration_blue_diff",
+                      "sd_movement_avg_speed_percentage_blue_diff",
+                      starts_with("sd_movement_percent"),
+                      "positioning_time_in_front_ball_diff",
+                      "sd_positioning_time_in_front_ball_blue_diff",
+                  "sd_positioning_goals_against_while_last_defender_blue_diff",
+                  "sd_positioning_time_closest_to_ball_blue_diff",
+                  "sd_positioning_time_farthest_from_ball_blue_diff",
+                      starts_with("sd_positioning_percent"),
+                      "sd_demo_taken_blue_diff",
+                      starts_with("sd_advanced"),
+                      "sd_car_id_blue_diff",
+                      "sd_steering_sensitivity_blue_diff",
+                      starts_with("sd_camera"),
+                  "sd_core_shooting_percentage_blue_diff",
+                  "sd_movement_avg_speed_blue_diff",
+                  "sd_positioning_time_most_back_blue_diff",
+                  "sd_positioning_time_most_forward_blue_diff",
+                  starts_with("sd_positioning_avg")))
+
+
 # Output a csv with the joined team and players datasets:
 # (this should include all of the diff variables and all of the sd variables)
 write_csv(x = RL_joined, "~/Desktop/SLU_Fellows/RL_Datasets/RL_joined.csv")
@@ -128,12 +159,14 @@ RL_numeric <- RL_numeric %>% select(-c("core_goals_diff",
                                        # keeping winnner_factor instead 
                                        # of winner numeric
                                        "winner_numeric",
-                                       "core_score_diff"))
+                                       "core_score_diff",
+                                       "core_shooting_percentage_diff"))
+
+# Order the dataset to have series_id and winner factor come first
+RL_numeric <- RL_numeric %>% select(series_id, winner_factor, everything())
 
 # Create a csv file for RL_numeric dataset:
 write_csv(x = RL_numeric, "~/Desktop/SLU_Fellows/RL_Datasets/RL_numeric.csv")
-
-
 
 
 

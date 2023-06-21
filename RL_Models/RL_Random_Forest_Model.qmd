@@ -71,7 +71,6 @@ Build actual Random Forest model:
 # Preprocess the data for modelling
 RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>% 
   step_rm(series_id) %>%
-  step_rm(core_shooting_percentage_diff) %>%
   step_normalize(all_numeric_predictors()) 
 
 # Build a random forest model specification
@@ -107,10 +106,10 @@ results %>%
 ```
 
 ```{r}
-(1950 + 1332)/(1950 + 1332 + 130 + 90)
+(1856 + 1163)/(1856 + 1163 + 299 + 184)
 ```
 
-The random forest model classified game outcome (win/loss) with 93.718% 
+The random forest model classified game outcome (win/loss) with 86.21% 
 accuracy.
 
 
