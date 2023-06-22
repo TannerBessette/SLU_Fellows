@@ -112,8 +112,67 @@ library(caret)
 library(ranger)
 library(vip)
 library(here)
-RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
-        col_types = cols(winner_factor = readr::col_factor()))
+games_by_players <- 
+  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
+
+#Calculate the team's standard deviations within each variable within each game:
+team_std <- games_by_players |>
+  group_by(game_id, team_id) |>
+  # calculate the standard deviations for each team for each numeric variable
+  summarise(across(where(is.numeric), \(x) sd(x, na.rm =TRUE),
+                   .names = "sd_{.col}"),
+            color = sample(color, size = 1),
+            winner = sample(winner, size = 1)) |>
+  ungroup() 
+
+
+team_std <- team_std |> select(game_id, color, everything()) |>
+  pivot_wider(id_cols = game_id, 
+              names_from = color,
+              values_from = -c(1, 2)) |>
+  # keep only game_id, team_id, and SDs 
+  select(game_id, winner_blue, starts_with("sd_")) 
+
+team_std <- team_std |> 
+  mutate(across(where(is.numeric) & ends_with("_blue"),
+                .names = "{col}_diff") -
+           across(where(is.numeric) & ends_with("_orange"))) |>
+  # keep only diff variables, and game_id
+  select(game_id, winner_blue, ends_with("_diff")) 
+
+
+# Merge this dataset with team_diff:
+RL_joined <- left_join(team_diff, team_std, by = c("game_id" = "game_id"))
+
+# Remove rows with NAs from the dataset
+RL_joined <- na.omit(RL_joined)
+
+
+# Output a csv with the joined team and players datasets:
+# (this should include all of the diff variables and all of the sd variables)
+write_csv(x = RL_joined, "~/Desktop/SLU_Fellows/RL_Datasets/RL_joined.csv")
+
+
+
+
+
+
+## NOW CREATE AND TIDY RL_numeric AS SEPARATE CSV:
+
+# Only keep winner and variables that are numeric:
+RL_numeric <- RL_joined %>% select(where(is.numeric), series_id, winner_factor)
+
+# Remove some numeric predictors that have obvious correlation to game outcome:
+RL_numeric <- RL_numeric %>% select(-c("core_goals_diff",
+                                       "core_assists_diff",
+                                       # keeping winnner_factor instead 
+                                       # of winner numeric
+                                       "winner_numeric",
+                                       "core_score_diff"))
+
+# Order the dataset to have series_id and winner factor come first
+RL_numeric <- RL_numeric %>% select(series_id, winner_factor, everything())
+
 set.seed(993)
 RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.8)
 RL_train <- training(RL_splits)
