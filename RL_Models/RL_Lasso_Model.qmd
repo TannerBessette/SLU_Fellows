@@ -36,7 +36,7 @@ RL_Lasso_df <- RL_numeric |> select(-c("series_id"))
 Split the data into train/test split:
 ```{r}
 set.seed(993)
-RL_splits <- initial_split(RL_numeric, prop = 0.7)
+RL_splits <- initial_split(RL_Lasso_df, prop = 0.7)
 RL_train <- training(RL_splits)
 RL_test <- testing(RL_splits)
 ```
@@ -57,7 +57,7 @@ RL_workflow <- workflow() %>%
 
 ```{r}
 set.seed(5)
-RL_resamples <- vfold_cv(RL_numeric, v = 10)
+RL_resamples <- vfold_cv(RL_Lasso_df, v = 10)
 
 RL_tune_res <-
   tune_grid(RL_workflow, resamples = RL_resamples,
@@ -69,7 +69,7 @@ autoplot(RL_tune_res)
 RL_workflow_final <-
   finalize_workflow(RL_workflow, select_best(RL_tune_res, metric = "rmse"))
 RL_fit <- fit(RL_workflow_final, data = RL_train)
-results <- fit(RL_workflow_final, data = RL_numeric_df) %>%
+results <- fit(RL_workflow_final, data = RL_Lasso_df) %>%
   tidy() %>%
   filter(estimate != 0)
 print(results, n = 42)
@@ -86,7 +86,7 @@ accuracy <- mean(Lasso_predictions == RL_test$winner_factor)
 accuracy
 ```
 
-**The Lasso model classified game outcome with 70.133% accuracy.**
+**The Lasso model classified game outcome with 70.797% accuracy.**
 
 
 

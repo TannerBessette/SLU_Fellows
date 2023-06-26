@@ -1,0 +1,19 @@
+---
+title: "Skill_Rating"
+format: html
+---
+
+```{r}
+library(janitor)
+library(tree)
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(caret)
+library(ranger)
+library(vip)
+library(devtools)
+# From Prof. Higham's github:
+library(compr)
+```
+

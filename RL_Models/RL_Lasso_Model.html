@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.0.36">
+<meta name="generator" content="quarto-1.3.353">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -11,10 +11,16 @@
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-span.underline{text-decoration: underline;}
-div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
@@ -41,43 +47,13 @@ pre.numberSource code > span > a:first-child::before
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
     padding: 0 4px; width: 4em;
-    color: #aaaaaa;
   }
-pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
 div.sourceCode
   {   }
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code span.at { color: #7d9029; } /* Attribute */
-code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
-code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code span.ch { color: #4070a0; } /* Char */
-code span.cn { color: #880000; } /* Constant */
-code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code span.dt { color: #902000; } /* DataType */
-code span.dv { color: #40a070; } /* DecVal */
-code span.er { color: #ff0000; font-weight: bold; } /* Error */
-code span.ex { } /* Extension */
-code span.fl { color: #40a070; } /* Float */
-code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
-code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code span.op { color: #666666; } /* Operator */
-code span.ot { color: #007020; } /* Other */
-code span.pp { color: #bc7a00; } /* Preprocessor */
-code span.sc { color: #4070a0; } /* SpecialChar */
-code span.ss { color: #bb6688; } /* SpecialString */
-code span.st { color: #4070a0; } /* String */
-code span.va { color: #19177c; } /* Variable */
-code span.vs { color: #4070a0; } /* VerbatimString */
-code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 
@@ -111,6 +87,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-title-meta">
 
     
+  
     
   </div>
   
@@ -146,37 +123,214 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ✖ dplyr::lag()      masks stats::lag()
 ✖ yardstick::spec() masks readr::spec()
 ✖ recipes::step()   masks stats::step()
-• Use tidymodels_prefer() to resolve common conflicts.</code></pre>
+• Search for functions across packages at https://www.tidymodels.org/find/</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Fitting a Lasso model to RL dataset:</p>
+<p>Read in dataset:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>here() starts at /Users/tannerbessette/Desktop/SLU_Fellows</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>RL_numeric_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"RL_Datasets/RL_numeric.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Rows: 34968 Columns: 136</code></pre>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>RL_numeric <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">"RL_Datasets/RL_numeric.csv"</span>), </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">col_types =</span> <span class="fu">cols</span>(<span class="at">winner_factor =</span> readr<span class="sc">::</span><span class="fu">col_factor</span>()))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Column specification ────────────────────────────────────────────────────────
-Delimiter: ","
-chr   (1): series_id
-dbl (135): ball_possession_time_diff, ball_time_in_side_diff, core_shots_dif...
-
-ℹ Use `spec()` to retrieve the full column specification for this data.
-ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-</div>
-</div>
+<p><strong>Fit a logistic regression model to the dataset:</strong></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>RL_numeric_df <span class="ot">&lt;-</span> RL_numeric_df <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(<span class="st">"series_id"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>RL_numeric<span class="sc">$</span>winner_factor <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">as.character</span>(RL_numeric<span class="sc">$</span>winner_factor))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>RL_log <span class="ot">&lt;-</span> <span class="fu">glm</span>(winner_factor <span class="sc">~</span> . <span class="sc">-</span> series_id, <span class="at">data =</span> RL_numeric)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(RL_log)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = winner_factor ~ . - series_id, data = RL_numeric)
+
+Deviance Residuals: 
+     Min        1Q    Median        3Q       Max  
+-1.46333  -0.24217   0.01364   0.24586   1.08963  
+
+Coefficients:
+                                                  Estimate Std. Error t value
+(Intercept)                                      5.232e-01  2.587e-03 202.198
+ball_possession_time_diff                       -5.313e-04  1.201e-04  -4.423
+ball_time_in_side_diff                           2.556e-03  1.390e-04  18.393
+core_shots_diff                                  5.617e-02  1.143e-03  49.156
+core_saves_diff                                  5.391e-02  1.416e-03  38.071
+boost_bpm_diff                                  -2.259e-04  7.066e-05  -3.197
+boost_bcpm_diff                                 -2.262e-04  1.288e-04  -1.756
+boost_avg_amount_diff                           -1.247e-03  4.883e-04  -2.553
+boost_amount_collected_big_diff                  7.643e-05  3.097e-05   2.468
+boost_amount_stolen_big_diff                     2.280e-05  6.098e-05   0.374
+boost_amount_collected_small_diff                8.025e-05  3.004e-05   2.671
+boost_amount_stolen_small_diff                   5.102e-05  4.694e-05   1.087
+boost_count_collected_big_diff                   1.499e-03  2.333e-03   0.643
+boost_count_stolen_big_diff                      3.153e-04  5.977e-03   0.053
+boost_count_collected_small_diff                 1.799e-03  3.030e-04   5.935
+boost_count_stolen_small_diff                   -3.195e-03  6.491e-04  -4.922
+boost_amount_overfill_diff                      -1.810e-06  2.479e-05  -0.073
+boost_amount_overfill_stolen_diff                3.929e-05  6.568e-05   0.598
+boost_amount_used_while_supersonic_diff         -1.780e-05  1.209e-05  -1.473
+boost_time_zero_boost_diff                      -1.190e-05  1.021e-04  -0.117
+boost_time_full_boost_diff                       5.783e-04  1.159e-04   4.989
+boost_time_boost_0_25_diff                      -6.578e-04  2.463e-04  -2.670
+boost_time_boost_25_50_diff                     -6.090e-04  2.488e-04  -2.448
+boost_time_boost_50_75_diff                     -4.658e-04  2.500e-04  -1.863
+boost_time_boost_75_100_diff                    -2.477e-04  2.535e-04  -0.977
+movement_total_distance_diff                     4.007e-07  1.807e-07   2.217
+movement_time_supersonic_speed_diff             -1.867e-01  1.641e-01  -1.138
+movement_time_boost_speed_diff                  -1.869e-01  1.641e-01  -1.139
+movement_time_slow_speed_diff                   -1.861e-01  1.641e-01  -1.134
+movement_time_ground_diff                        1.223e-01  1.637e-01   0.747
+movement_time_low_air_diff                       1.224e-01  1.637e-01   0.748
+movement_time_high_air_diff                      1.239e-01  1.637e-01   0.757
+movement_time_powerslide_diff                   -3.141e-03  8.821e-04  -3.561
+movement_count_powerslide_diff                   2.328e-04  8.029e-05   2.900
+positioning_time_defensive_third_diff            9.377e-02  1.640e-01   0.572
+positioning_time_neutral_third_diff              9.407e-02  1.640e-01   0.573
+positioning_time_offensive_third_diff            9.317e-02  1.640e-01   0.568
+positioning_time_defensive_half_diff            -3.225e-02  5.187e-02  -0.622
+positioning_time_offensive_half_diff            -3.141e-02  5.187e-02  -0.605
+positioning_time_behind_ball_diff                3.900e-03  6.271e-05  62.203
+demo_inflicted_diff                              8.012e-03  1.720e-03   4.658
+sd_core_shots_blue_diff                          3.922e-03  2.416e-03   1.623
+sd_core_saves_blue_diff                          1.999e-03  3.159e-03   0.633
+sd_boost_bpm_blue_diff                          -5.731e-05  1.549e-04  -0.370
+sd_boost_bcpm_blue_diff                          8.364e-05  1.740e-04   0.481
+sd_boost_avg_amount_blue_diff                   -1.694e-03  1.155e-03  -1.467
+sd_boost_amount_collected_big_blue_diff         -2.591e-05  3.183e-05  -0.814
+sd_boost_amount_stolen_big_blue_diff            -1.072e-04  6.789e-05  -1.580
+sd_boost_amount_collected_small_blue_diff       -1.484e-07  5.321e-05  -0.003
+sd_boost_amount_stolen_small_blue_diff          -2.366e-04  1.081e-04  -2.189
+sd_boost_count_collected_big_blue_diff           7.873e-04  2.327e-03   0.338
+sd_boost_count_stolen_big_blue_diff              5.217e-03  6.075e-03   0.859
+sd_boost_count_collected_small_blue_diff         5.351e-04  6.458e-04   0.828
+sd_boost_count_stolen_small_blue_diff            2.109e-03  1.372e-03   1.537
+sd_boost_amount_overfill_blue_diff              -5.048e-05  3.256e-05  -1.550
+sd_boost_amount_overfill_stolen_blue_diff       -1.137e-04  9.543e-05  -1.192
+sd_boost_amount_used_while_supersonic_blue_diff -2.661e-05  3.060e-05  -0.870
+sd_boost_time_zero_boost_blue_diff               3.000e-05  2.801e-04   0.107
+sd_boost_time_full_boost_blue_diff              -3.270e-04  3.157e-04  -1.036
+sd_boost_time_boost_0_25_blue_diff              -2.411e-04  2.001e-04  -1.205
+sd_boost_time_boost_25_50_blue_diff             -8.080e-05  2.525e-04  -0.320
+sd_boost_time_boost_50_75_blue_diff              1.245e-04  2.809e-04   0.443
+sd_boost_time_boost_75_100_blue_diff             2.456e-04  2.453e-04   1.001
+sd_movement_total_distance_blue_diff            -2.435e-07  2.849e-07  -0.855
+sd_movement_time_supersonic_speed_blue_diff      1.910e-04  3.734e-04   0.511
+sd_movement_time_boost_speed_blue_diff          -3.842e-04  3.280e-04  -1.171
+sd_movement_time_slow_speed_blue_diff            3.694e-04  3.717e-04   0.994
+sd_movement_time_ground_blue_diff               -4.249e-04  3.905e-04  -1.088
+sd_movement_time_low_air_blue_diff               4.843e-04  4.298e-04   1.127
+sd_movement_time_high_air_blue_diff              1.449e-04  5.741e-04   0.252
+sd_movement_time_powerslide_blue_diff            7.081e-03  2.219e-03   3.191
+sd_movement_count_powerslide_blue_diff          -7.897e-04  2.093e-04  -3.773
+sd_positioning_time_defensive_third_blue_diff    6.328e-04  4.257e-04   1.486
+sd_positioning_time_neutral_third_blue_diff     -6.879e-04  3.465e-04  -1.985
+sd_positioning_time_offensive_third_blue_diff    6.791e-04  4.484e-04   1.514
+sd_positioning_time_defensive_half_blue_diff     2.120e-05  7.876e-04   0.027
+sd_positioning_time_offensive_half_blue_diff     2.986e-04  7.920e-04   0.377
+sd_positioning_time_behind_ball_blue_diff        3.603e-04  2.971e-04   1.213
+sd_demo_inflicted_blue_diff                      1.182e-03  3.714e-03   0.318
+                                                Pr(&gt;|t|)    
+(Intercept)                                      &lt; 2e-16 ***
+ball_possession_time_diff                       9.79e-06 ***
+ball_time_in_side_diff                           &lt; 2e-16 ***
+core_shots_diff                                  &lt; 2e-16 ***
+core_saves_diff                                  &lt; 2e-16 ***
+boost_bpm_diff                                  0.001393 ** 
+boost_bcpm_diff                                 0.079185 .  
+boost_avg_amount_diff                           0.010695 *  
+boost_amount_collected_big_diff                 0.013603 *  
+boost_amount_stolen_big_diff                    0.708440    
+boost_amount_collected_small_diff               0.007563 ** 
+boost_amount_stolen_small_diff                  0.277074    
+boost_count_collected_big_diff                  0.520435    
+boost_count_stolen_big_diff                     0.957934    
+boost_count_collected_small_diff                2.99e-09 ***
+boost_count_stolen_small_diff                   8.64e-07 ***
+boost_amount_overfill_diff                      0.941790    
+boost_amount_overfill_stolen_diff               0.549683    
+boost_amount_used_while_supersonic_diff         0.140827    
+boost_time_zero_boost_diff                      0.907224    
+boost_time_full_boost_diff                      6.12e-07 ***
+boost_time_boost_0_25_diff                      0.007589 ** 
+boost_time_boost_25_50_diff                     0.014376 *  
+boost_time_boost_50_75_diff                     0.062476 .  
+boost_time_boost_75_100_diff                    0.328601    
+movement_total_distance_diff                    0.026631 *  
+movement_time_supersonic_speed_diff             0.255137    
+movement_time_boost_speed_diff                  0.254677    
+movement_time_slow_speed_diff                   0.256755    
+movement_time_ground_diff                       0.454941    
+movement_time_low_air_diff                      0.454630    
+movement_time_high_air_diff                     0.449240    
+movement_time_powerslide_diff                   0.000371 ***
+movement_count_powerslide_diff                  0.003733 ** 
+positioning_time_defensive_third_diff           0.567615    
+positioning_time_neutral_third_diff             0.566349    
+positioning_time_offensive_third_diff           0.570056    
+positioning_time_defensive_half_diff            0.534094    
+positioning_time_offensive_half_diff            0.544865    
+positioning_time_behind_ball_diff                &lt; 2e-16 ***
+demo_inflicted_diff                             3.22e-06 ***
+sd_core_shots_blue_diff                         0.104598    
+sd_core_saves_blue_diff                         0.526806    
+sd_boost_bpm_blue_diff                          0.711374    
+sd_boost_bcpm_blue_diff                         0.630752    
+sd_boost_avg_amount_blue_diff                   0.142414    
+sd_boost_amount_collected_big_blue_diff         0.415744    
+sd_boost_amount_stolen_big_blue_diff            0.114211    
+sd_boost_amount_collected_small_blue_diff       0.997774    
+sd_boost_amount_stolen_small_blue_diff          0.028644 *  
+sd_boost_count_collected_big_blue_diff          0.735135    
+sd_boost_count_stolen_big_blue_diff             0.390478    
+sd_boost_count_collected_small_blue_diff        0.407409    
+sd_boost_count_stolen_small_blue_diff           0.124410    
+sd_boost_amount_overfill_blue_diff              0.121068    
+sd_boost_amount_overfill_stolen_blue_diff       0.233390    
+sd_boost_amount_used_while_supersonic_blue_diff 0.384418    
+sd_boost_time_zero_boost_blue_diff              0.914713    
+sd_boost_time_full_boost_blue_diff              0.300422    
+sd_boost_time_boost_0_25_blue_diff              0.228248    
+sd_boost_time_boost_25_50_blue_diff             0.748977    
+sd_boost_time_boost_50_75_blue_diff             0.657596    
+sd_boost_time_boost_75_100_blue_diff            0.316715    
+sd_movement_total_distance_blue_diff            0.392690    
+sd_movement_time_supersonic_speed_blue_diff     0.609113    
+sd_movement_time_boost_speed_blue_diff          0.241558    
+sd_movement_time_slow_speed_blue_diff           0.320421    
+sd_movement_time_ground_blue_diff               0.276574    
+sd_movement_time_low_air_blue_diff              0.259844    
+sd_movement_time_high_air_blue_diff             0.800678    
+sd_movement_time_powerslide_blue_diff           0.001419 ** 
+sd_movement_count_powerslide_blue_diff          0.000162 ***
+sd_positioning_time_defensive_third_blue_diff   0.137191    
+sd_positioning_time_neutral_third_blue_diff     0.047145 *  
+sd_positioning_time_offensive_third_blue_diff   0.129929    
+sd_positioning_time_defensive_half_blue_diff    0.978523    
+sd_positioning_time_offensive_half_blue_diff    0.706166    
+sd_positioning_time_behind_ball_blue_diff       0.225214    
+sd_demo_inflicted_blue_diff                     0.750173    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for gaussian family taken to be 0.1043806)
+
+    Null deviance: 4213.2  on 17483  degrees of freedom
+Residual deviance: 1816.7  on 17405  degrees of freedom
+AIC: 10189
+
+Number of Fisher Scoring iterations: 2</code></pre>
+</div>
+</div>
+<p><strong>Fitting a Lasso model to RL dataset (all code below):</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>RL_Lasso_df <span class="ot">&lt;-</span> RL_numeric <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(<span class="st">"series_id"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Split the data into train/test split:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">993</span>)</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>RL_splits <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(RL_numeric_df, <span class="at">prop =</span> <span class="fl">0.5</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>RL_splits <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(RL_Lasso_df, <span class="at">prop =</span> <span class="fl">0.7</span>)</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>RL_train <span class="ot">&lt;-</span> <span class="fu">training</span>(RL_splits)</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>RL_test <span class="ot">&lt;-</span> <span class="fu">testing</span>(RL_splits)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -195,7 +349,7 @@ dbl (135): ball_possession_time_diff, ball_time_in_side_diff, core_shots_dif...
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">5</span>)</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>RL_resamples <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(RL_numeric_df, <span class="at">v =</span> <span class="dv">10</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>RL_resamples <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(RL_Lasso_df, <span class="at">v =</span> <span class="dv">10</span>)</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>RL_tune_res <span class="ot">&lt;-</span></span>
 <span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tune_grid</span>(RL_workflow, <span class="at">resamples =</span> RL_resamples,</span>
@@ -213,19 +367,10 @@ dbl (135): ball_possession_time_diff, ball_time_in_side_diff, core_shots_dif...
 <pre><code>There were issues with some computations   A: x3</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>There were issues with some computations   A: x4</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
 <pre><code>There were issues with some computations   A: x5</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>There were issues with some computations   A: x6</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
 <pre><code>There were issues with some computations   A: x7</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>There were issues with some computations   A: x8</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>There were issues with some computations   A: x9</code></pre>
@@ -237,41 +382,40 @@ There were issues with some computations   A: x10</code></pre>
 <div class="cell-output cell-output-stderr">
 <pre><code></code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(RL_tune_res)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(RL_tune_res)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="RL_Lasso_Model_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+<p><img src="RL_Lasso_Model_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>RL_workflow_final <span class="ot">&lt;-</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">finalize_workflow</span>(RL_workflow, <span class="fu">select_best</span>(RL_tune_res, <span class="at">metric =</span> <span class="st">"rmse"</span>))</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>RL_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(RL_workflow_final, <span class="at">data =</span> RL_train)</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">fit</span>(RL_workflow_final, <span class="at">data =</span> RL_numeric_df) <span class="sc">%&gt;%</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tidy</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(estimate <span class="sc">!=</span> <span class="dv">0</span>)</span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(results, <span class="at">n =</span> <span class="dv">42</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>RL_workflow_final <span class="ot">&lt;-</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">finalize_workflow</span>(RL_workflow, <span class="fu">select_best</span>(RL_tune_res, <span class="at">metric =</span> <span class="st">"rmse"</span>))</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>RL_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(RL_workflow_final, <span class="at">data =</span> RL_train)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">fit</span>(RL_workflow_final, <span class="at">data =</span> RL_Lasso_df) <span class="sc">%&gt;%</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tidy</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(estimate <span class="sc">!=</span> <span class="dv">0</span>)</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(results, <span class="at">n =</span> <span class="dv">42</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 3 × 3
+<pre><code># A tibble: 2 × 3
   term                              estimate penalty
   &lt;chr&gt;                                &lt;dbl&gt;   &lt;dbl&gt;
-1 (Intercept)                          0.398   0.244
-2 core_shooting_percentage_diff        0.154   0.244
-3 positioning_time_behind_ball_diff    0.282   0.244</code></pre>
+1 (Intercept)                          0.396   0.244
+2 positioning_time_behind_ball_diff    0.357   0.244</code></pre>
 </div>
 </div>
 <p>Evaluate model:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>Lasso_predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(RL_fit, <span class="at">new_data =</span> RL_test)</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>Lasso_predictions <span class="ot">&lt;-</span> <span class="fu">if_else</span>(Lasso_predictions <span class="sc">&gt;</span> <span class="fl">0.5</span>, </span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">true =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">false =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>accuracy <span class="ot">&lt;-</span> <span class="fu">mean</span>(Lasso_predictions <span class="sc">==</span> RL_test<span class="sc">$</span>winner_factor)</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>accuracy</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>Lasso_predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(RL_fit, <span class="at">new_data =</span> RL_test)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>Lasso_predictions <span class="ot">&lt;-</span> <span class="fu">if_else</span>(Lasso_predictions <span class="sc">&gt;</span> <span class="fl">0.5</span>, </span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">true =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">false =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>accuracy <span class="ot">&lt;-</span> <span class="fu">mean</span>(Lasso_predictions <span class="sc">==</span> RL_test<span class="sc">$</span>winner_factor)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>accuracy</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.749714</code></pre>
+<pre><code>[1] 0.707968</code></pre>
 </div>
 </div>
-<p>The Lasso model classified game outcome with 74.971% accuracy.</p>
+<p><strong>The Lasso model classified game outcome with 70.797% accuracy.</strong></p>
 
 </main>
 <!-- /main column -->
@@ -302,9 +446,23 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     icon: icon
   };
   anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
   const clipboard = new window.ClipboardJS('.code-copy-button', {
-    target: function(trigger) {
-      return trigger.previousElementSibling;
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
     }
   });
   clipboard.on('success', function(e) {
@@ -316,7 +474,24 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     button.classList.add('code-copy-button-checked');
     var currentTitle = button.getAttribute("title");
     button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
     setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
       button.setAttribute("title", currentTitle);
       button.classList.remove('code-copy-button-checked');
     }, 1000);
@@ -344,31 +519,136 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   for (var i=0; i<noterefs.length; i++) {
     const ref = noterefs[i];
     tippyHover(ref, function() {
-      let href = ref.getAttribute('href');
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
       return note.innerHTML;
     });
   }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
   var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
   for (var i=0; i<bibliorefs.length; i++) {
     const ref = bibliorefs[i];
-    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
-    tippyHover(ref, function() {
-      var popup = window.document.createElement('div');
-      cites.forEach(function(cite) {
-        var citeDiv = window.document.createElement('div');
-        citeDiv.classList.add('hanging-indent');
-        citeDiv.classList.add('csl-entry');
-        var biblioDiv = window.document.getElementById('ref-' + cite);
-        if (biblioDiv) {
-          citeDiv.innerHTML = biblioDiv.innerHTML;
-        }
-        popup.appendChild(citeDiv);
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
       });
-      return popup.innerHTML;
-    });
+    }
   }
 });
 </script>
