@@ -10,22 +10,33 @@ library(tidymodels)
 library(dplyr)
 ```
 
-
-Fitting a Lasso model to RL dataset:
+Read in dataset:
 ```{r}
 library(here)
-RL_numeric_df <- read_csv(here("RL_Datasets/RL_numeric.csv"))
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
 ```
 
+**Fit a logistic regression model to the dataset:**
 ```{r}
-RL_numeric_df <- RL_numeric_df |> select(-c("series_id"))
+RL_numeric$winner_factor <- as.numeric(as.character(RL_numeric$winner_factor))
+RL_log <- glm(winner_factor ~ . - series_id, data = RL_numeric)
+summary(RL_log)
+```
+
+
+
+
+**Fitting a Lasso model to RL dataset (all code below):**
+```{r}
+RL_Lasso_df <- RL_numeric |> select(-c("series_id"))
 ```
 
 
 Split the data into train/test split:
 ```{r}
 set.seed(993)
-RL_splits <- initial_split(RL_numeric_df, prop = 0.5)
+RL_splits <- initial_split(RL_numeric, prop = 0.7)
 RL_train <- training(RL_splits)
 RL_test <- testing(RL_splits)
 ```
@@ -46,7 +57,7 @@ RL_workflow <- workflow() %>%
 
 ```{r}
 set.seed(5)
-RL_resamples <- vfold_cv(RL_numeric_df, v = 10)
+RL_resamples <- vfold_cv(RL_numeric, v = 10)
 
 RL_tune_res <-
   tune_grid(RL_workflow, resamples = RL_resamples,
@@ -75,8 +86,7 @@ accuracy <- mean(Lasso_predictions == RL_test$winner_factor)
 accuracy
 ```
 
-The Lasso model classified game outcome with 74.971% accuracy.
-
+**The Lasso model classified game outcome with 70.133% accuracy.**
 
 
 

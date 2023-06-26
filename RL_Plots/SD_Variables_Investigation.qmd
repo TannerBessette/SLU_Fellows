@@ -1,0 +1,74 @@
+---
+title: "SD_Variables_Investigation"
+execute: 
+  echo: false
+  warning: false
+format: html
+---
+
+Load in necessary libraries:
+```{r}
+library(janitor)
+library(tree)
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(ggplot2)
+library(GGally)
+```
+
+Read in dataset:
+```{r}
+library(here)
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
+```
+
+```{r}
+# column 136 is winner_factor
+ggpairs(data = RL_numeric, columns = c(2, 46, 47, 48, 49, 50), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+```{r}
+ggpairs(data = RL_numeric, columns = c(2, 51, 52, 53, 54, 55), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+```{r}
+ggpairs(data = RL_numeric, columns = c(2, 56, 57, 58, 59, 60), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+
+
+```{r}
+ncol <- ncol(RL_numeric)
+ncol
+```
+
+
+see what random forest model would look like with just sd variables:
+```{r}
+RL_numeric_sd <- RL_numeric %>% select(series_id, winner_factor, 
+                                       starts_with("sd"))
+library(rpart)
+library(rpart.plot)
+clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_numeric_sd)
+clean_tree
+rpart.plot(clean_tree)
+```
+
+Plots to visualize top 4 in terms of importance vs. winner:
+```{r}
+ggpairs(data = RL_numeric_sd, columns = c("winner_factor", 
+                                      "sd_core_shots_blue_diff",
+                                  "sd_boost_amount_overfill_stolen_blue_diff",
+                                  "sd_boost_time_full_boost_blue_diff",
+                                  "sd_boost_time_zero_boost_blue_diff"), 
+        lower = list(combo = wrap(ggally_facethist, bins = 15)))
+```
+
+
+
+

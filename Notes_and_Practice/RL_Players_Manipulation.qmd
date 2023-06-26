@@ -4,20 +4,19 @@ format: html
 ---
 
 ```{r}
-matches_by_players <- 
-  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/matches_by_players.csv")
-games_by_players <- 
-  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
-team_diff <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
-```
-
-```{r}
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(GGally)
 ```
 
+```{r}
+matches_by_players <- 
+  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/matches_by_players.csv")
+games_by_players <- 
+  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
+team_diff <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
+```
 
 ```{r}
 view(matches_by_players)

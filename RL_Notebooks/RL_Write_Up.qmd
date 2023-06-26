@@ -23,7 +23,6 @@ library(knitr)
 library(here)
 RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv"))
 RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
-#
 ```
 
 **Project Introduction:**
@@ -32,7 +31,7 @@ RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
   
   Rocket League is a video game that can be played on a PC, Xbox, PlayStation, and Nintendo Switch. Much like regular soccer, there is one ball and two goals, and you win by scoring more goals than your opponent. The game is played with a randomly assigned “blue” and “orange” team, and each player controls one rocket-powered car. There are different game modes within the game, but for the purposes of this project I will be focusing on the 3v3 game-mode, which is where the majority of competitive play and money made on the esport is. Rocket League was released by Psyonix on July 7th, 2015.
   
-  Despite being released in 2015, the competitive and professional side of the video game is still growing to this day. In 2022, the total prize pool given out by Psyonix alone reached $6,000,000, and there are other non-Psyonix hosted tournaments with cash prizes as well. This past year the video game has expanded to new regions, including Asia-Pacific North, Asia-Pacific South, and Middle East/North Africa. Players are constantly pushing the skill ceiling to re-define what it means to be the best in the world. With these improvments come constantly changing strategy and tactics that make for an even more thrilling viewer experience.
+  Despite being released in 2015, the competitive and professional side of the video game is still growing to this day. In 2022, the total prize pool given out by Psyonix alone reached $6,000,000, and there are other non-Psyonix hosted tournaments with cash prizes as well. This past year the video game has expanded to new regions, including Asia-Pacific North, Asia-Pacific South, and Middle East/North Africa. Players are constantly pushing the skill ceiling to re-define what it means to be the best in the world. With these improvements come constantly changing strategy and tactics that make for an even more thrilling viewer experience.
   
   Much like with popular sports such as baseball and football, there is a growing analytical side for assessing performance of some of the most popular esports. These are used to help strategize, coach, and improve competitive gamers’ performances. While analytics are useful to some competitive video games, Rocket League is a relatively new esport, and the statistical side of the game is widely unexplored. As both a fan and a player of Rocket League, and somebody with an interest in statistics and data science in general, I was curious to see if statistical/machine learning algorithms could be applied to predicting game outcomes (whether the team wins or loses the game). These findings could potentially help form different strategies among professional teams and could even help coaches to decide what areas to put more of a focus on going into games.
   
@@ -50,7 +49,7 @@ RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
 
 **core_shooting_percentage_diff plotted against winner:**
 ```{r}
-ggplot(data = RL_joined, aes(x = winner.x, 
+ggplot(data = RL_joined, aes(x = winner, 
                              y = core_shooting_percentage_diff)) + 
   geom_boxplot(fill="coral1",colour ="black") +
   labs(y= "Shooting Percentage Difference", x = "Winner")
@@ -58,7 +57,7 @@ ggplot(data = RL_joined, aes(x = winner.x,
 
 **postioning_time_behind_ball_diff plotted against winner:**
 ```{r}
-ggplot(data = RL_joined, aes(x = winner.x, 
+ggplot(data = RL_joined, aes(x = winner, 
                              y = positioning_time_behind_ball_diff)) + 
   geom_boxplot(fill="coral1",colour ="black") +
   labs(y= "Positioning Time Behind Ball Difference", x = "Winner")

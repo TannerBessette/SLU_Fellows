@@ -1,5 +1,8 @@
 ---
 title: "Random Forest Model to Predict RL Game Outcome"
+execute: 
+  echo: false
+  warning: false
 format: html
 ---
 
@@ -15,7 +18,6 @@ library(ranger)
 library(vip)
 ```
 
-
 Read in dataset:
 ```{r}
 library(here)
@@ -23,50 +25,16 @@ RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"),
         col_types = cols(winner_factor = readr::col_factor()))
 ```
 
-
-Build Random Forest Model:
+Get train/test split:
 ```{r}
-set.seed(993)
-RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.8)
+set.seed(3)
+RL_splits <- 
+  group_initial_split(RL_numeric, group = series_id, prop = 0.8)
 RL_train <- training(RL_splits)
 RL_test <- testing(RL_splits)
-
-RL_resamples <- group_vfold_cv(RL_train, v = 5, group = series_id)
-
-RL_train_tree <- tree(winner_factor ~ . - series_id, data = RL_train)
-
-plot(RL_train_tree)
-text(RL_train_tree)
 ```
 
-
-Get predictions and calculate model classification accuracy:
-```{r}
-RL_fit <- fit(RL_workflow, data = RL_train)
-RL_predictions <- predict(RL_fit, new_data = RL_test)
-predictions <- predict(RL_train_tree, newdata = RL_test)
-# if more than 50% likely 
-predictions <- if_else(predictions > 0.5, 
-                       true = TRUE, 
-                       false = FALSE)
-accuracy <- mean(RL_predictions == RL_test$winner_factor)
-accuracy
-```
-
-The Random Forest model predicted game outcome with 95.537% accuracy.
-
-
-Cleaner visual of the random forest tree output:
-```{r}
-library(rpart)
-library(rpart.plot)
-clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
-clean_tree
-rpart.plot(clean_tree)
-```
-
-
-Build actual Random Forest model:
+Build Random Forest Model with all Variables Included:
 ```{r}
 # Preprocess the data for modelling
 RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>% 
@@ -106,12 +74,11 @@ results %>%
 ```
 
 ```{r}
-(1856 + 1163)/(1856 + 1163 + 299 + 184)
+(1859 + 1165)/(1859 + 1165 + 297 + 181)
 ```
 
-The random forest model classified game outcome (win/loss) with 86.21% 
+The random forest model classified game outcome (win/loss) with 86.35% 
 accuracy.
-
 
 See the importance of variables in the random forest model:
 ```{r}
@@ -119,8 +86,247 @@ See the importance of variables in the random forest model:
 rf_wf_fit %>% 
   extract_fit_parsnip() %>% 
 # Make VIP plot
+  vip(num_features = 15)
+```
+
+
+
+
+RANDOM FOREST MODEL WITH ONLY SD VARIABLES INCLUDED:
+
+Select only sd diff variables:
+```{r}
+RL_numeric_sd <- RL_numeric %>% select(series_id, winner_factor, 
+                                       starts_with("sd"))
+```
+
+Get train/test split:
+```{r}
+set.seed(3)
+RL_sd_splits <- 
+  group_initial_split(RL_numeric_sd, group = series_id, prop = 0.8)
+RL_sd_train <- training(RL_sd_splits)
+RL_sd_test <- testing(RL_sd_splits)
+```
+
+Build Random Forest model:
+```{r}
+# Preprocess the data for modelling
+RL_sd_recipe <- recipe(winner_factor ~ ., data = RL_sd_train) %>% 
+  step_rm(series_id) %>%
+  step_normalize(all_numeric_predictors()) 
+
+# Build a random forest model specification
+rf_sd_spec <- rand_forest() %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_sd_wf <- workflow() %>% 
+  add_recipe(RL_sd_recipe) %>% 
+  add_model(rf_sd_spec)
+
+# Fit a model
+rf_sd_wf_fit <- rf_sd_wf %>% 
+  fit(data = RL_sd_train)
+
+# Make predictions on test data
+results_sd <- RL_sd_test %>% select(winner_factor) %>% 
+  bind_cols(rf_sd_wf_fit %>% 
+              predict(new_data = RL_sd_test)) %>% 
+  bind_cols(rf_sd_wf_fit %>% 
+              predict(new_data = RL_sd_test, type = "prob"))
+
+# Print out predictions
+results_sd %>% 
+  slice_head(n = 10)
+```
+
+```{r}
+# get results in a confusion matrix:
+results_sd %>% 
+  conf_mat(winner_factor, .pred_class)
+```
+
+```{r}
+(1829 + 360)/(1829 + 1058 + 252 + 360)
+```
+
+The random forest model classified game outcome (win/loss) with 62.561% 
+accuracy.
+
+See the importance of variables in the random forest model:
+```{r}
+# Extract the fitted model from the workflow
+rf_sd_wf_fit %>% 
+  extract_fit_parsnip() %>% 
+# Make VIP plot
   vip()
 ```
 
+
+
+
+
+RANDOM FOREST PLOT WITHOUT ANY SD VARIABLES INCLUDED:
+
+Remove all sd variables:
+```{r}
+RL_numeric_diff_only <- RL_numeric %>% select(-c(starts_with("sd")))
+```
+
+Get train and test split:
+```{r}
+set.seed(3)
+RL_diff_splits <- 
+  group_initial_split(RL_numeric_diff_only, group = series_id, prop = 0.8)
+RL_diff_train <- training(RL_diff_splits)
+RL_diff_test <- testing(RL_diff_splits)
+```
+
+Build Random Forest model:
+```{r}
+# Preprocess the data for modelling
+RL_diff_recipe <- recipe(winner_factor ~ ., data = RL_diff_train) %>% 
+  step_rm(series_id) %>%
+  step_normalize(all_numeric_predictors()) 
+
+# Build a random forest model specification
+rf_diff_spec <- rand_forest() %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_diff_wf <- workflow() %>% 
+  add_recipe(RL_diff_recipe) %>% 
+  add_model(rf_diff_spec)
+
+# Fit a model
+rf_diff_wf_fit <- rf_diff_wf %>% 
+  fit(data = RL_diff_train)
+
+# Make predictions on test data
+results_diff <- RL_diff_test %>% select(winner_factor) %>% 
+  bind_cols(rf_diff_wf_fit %>% 
+              predict(new_data = RL_diff_test)) %>% 
+  bind_cols(rf_diff_wf_fit %>% 
+              predict(new_data = RL_diff_test, type = "prob"))
+
+# Print out predictions
+results_diff %>% 
+  slice_head(n = 10)
+```
+
+```{r}
+# get results in a confusion matrix:
+results_diff %>% 
+  conf_mat(winner_factor, .pred_class)
+```
+
+Calculate model accuracy from classification table output:
+```{r}
+(1875 + 1150)/(1875 + 268 + 206 + 1150)
+```
+
+RF model classified with 86.452% accuracy.
+
+See the importance of variables in the random forest model:
+```{r}
+# Extract the fitted model from the workflow
+rf_diff_wf_fit %>% 
+  extract_fit_parsnip() %>% 
+# Make VIP plot
+  vip()
+```
+
+Model actually performed slightly better without any of the sd variables included.
+
+
+
+
+RANDOM FOREST MODEL WITH ONLY MOVEMENT VARIABLES:
+
+```{r}
+RL_movement <- RL_numeric %>% 
+    select(winner_factor, series_id, 
+           contains("movement"), contains("positioning"))
+```
+
+Make train/test split of the movement data:
+```{r}
+set.seed(3)
+RL_movement_splits <- 
+  group_initial_split(RL_movement, group = series_id, prop = 0.8)
+RL_movement_train <- training(RL_movement_splits)
+RL_movement_test <- testing(RL_movement_splits)
+```
+
+Build Random Forest Model with only movement variables included:
+```{r}
+# Preprocess the data for modelling
+RL_movement_recipe <- recipe(winner_factor ~ ., data = RL_movement_train) %>% 
+  step_rm(series_id) %>%
+  step_normalize(all_numeric_predictors()) 
+
+# Build a random forest model specification
+rf_movement_spec <- rand_forest() %>% 
+  set_engine("ranger", importance = "permutation") %>% 
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_movement_wf <- workflow() %>% 
+  add_recipe(RL_movement_recipe) %>% 
+  add_model(rf_movement_spec)
+
+# Fit a model
+rf_movement_wf_fit <- rf_movement_wf %>% 
+  fit(data = RL_movement_train)
+
+# Make predictions on test data
+movement_results <- RL_movement_test %>% select(winner_factor) %>% 
+  bind_cols(rf_movement_wf_fit %>% 
+              predict(new_data = RL_movement_test)) %>% 
+  bind_cols(rf_movement_wf_fit %>% 
+              predict(new_data = RL_movement_test, type = "prob"))
+
+# Print out predictions
+movement_results %>% 
+  slice_head(n = 10)
+```
+
+```{r}
+# get results in a confusion matrix:
+movement_results %>% 
+  conf_mat(winner_factor, .pred_class)
+```
+
+Calculate model accuracy:
+```{r}
+(1807 + 1096)/(1807 + 1096 + 322 + 274)
+```
+
+The model classified with 82.967% accuracy
+
+See most important variables in this model:
+```{r}
+rf_movement_wf_fit %>% 
+  extract_fit_parsnip() %>% 
+# Make VIP plot
+  # num features changes number of variables being chosen, default is 10
+  vip(num_features = 15)
+```
+
+
+
+
+Clean visual plot of an example decision tree:
+(now just has positioning time behind ball as only predictor variable)
+```{r}
+library(rpart)
+library(rpart.plot)
+clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
+clean_tree
+rpart.plot(clean_tree)
+```
 
 
