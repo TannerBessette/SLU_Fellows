@@ -3,6 +3,7 @@ title: "Skill_Rating"
 format: html
 ---
 
+Load in necessary packages:
 ```{r}
 library(janitor)
 library(tree)
@@ -16,4 +17,35 @@ library(devtools)
 # From Prof. Higham's github:
 library(compr)
 ```
+
+Load in dataset:
+```{r}
+library(here)
+RL_joined <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_joined.csv", 
+        col_types = cols(winner_factor = readr::col_factor()))
+```
+
+
+```{r}
+RL_comp_mod <- comp_glm(winner_factor ~ -1, data = RL_joined,
+                     p1 = "team_id", p2 = "team_id_orange")
+```
+
+```{r}
+library(broom)
+tidy(RL_comp_mod)
+glance(comp_mod)
+
+tidy(comp_mod)
+summary(comp_mod)
+AIC(comp_mod)
+
+
+
+augment(comp_mod) ## need to clean up names of columns
+augment(comp_mod) |> names()
+augment(comp_mod, type.predict = "response")
+```
+
+
 
