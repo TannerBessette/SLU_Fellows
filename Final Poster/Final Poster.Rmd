@@ -1,48 +1,65 @@
 ---
-title: Generate Reproducible & Live HTML and PDF Conference Posters Using RMarkdown
+title: Predicting Rocket League Game Outcome Through Statistical Modeling
 author:
-  - name: Brent Thorne
-    affil: 1
-    orcid: '0000-0002-1099-3857'
-  - name: Another G. Author
-    affil: 2
-affiliation:
-  - num: 1
-    address: Department of Earth Science, Brock University
-  - num: 2
-    address: Department of Graphics and Layouts, University of Posters; Canada
+  - name: Tanner Bessette
+    affil: 
+    orcid: 
+  - name: |
+      Faculty Advisor:&nbsp;
+      Professor Higham
+    affil: 
+  - name: Department of Mathematics, Computer Science & Statistics
+    
+affiliation: 
+  - num: 
+    address: Department of Mathematics, Computer Science & Statistics
+  - num: 
+    address: St. Lawrence University
 column_numbers: 3
 logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
-logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
+logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png # this might be controlling posterdown logo in top right and left
 output: 
   posterdown::posterdown_html:
     self_contained: false
 bibliography: packages.bib
 ---
 
+
+
+
+
+
+
+
+
+
+
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-# Introduction
+# What is Rocket League?
 
-Welcome to `posterdown` ! This is my attempt to provide a semi-smooth workflow for those who wish to take their R Markdown skills to the conference world. Most features from R Markdown are available in this package such as Markdown section notation, figure captioning, and even citations like this one [@R-rmarkdown]. The rest of this example poster will show how you can insert typical conference poster features into your own document. 
+Rocket League is video game soccer played in cars. Each player controls their own car. Games last 5 minutes and the game-mode that I explored for the purposes of this project was the 3v3 mode.
 
-## Objectives
+# Project Goals
 
-1. Easy to use reproducible poster design. 
-2. Integration with R Markdown.
-3. Easy transition from `posterdown` to `pagedown` report or manuscript documents [@R-pagedown].
+The main goal of my project was to train a model on professional Rocket League games and use that model to predict match outcomes (Win/Loss) for other professional Rocket League games. I wanted to get an idea of which variables in the dataset were most associated with winning games (besides obvious predictors like goals scored), and use these findings to figure out whether certain approaches/tactics that different professional teams utilize are more or less effective.
 
 # Methods
 
-This package uses the same workflow approach as the R Markdown you know and love. Basically it goes from RMarkdown > Knitr > Markdown > Pandoc > HTML/CSS > PDF. You can even use the bibliography the same way [@R-posterdown].
+I went into the project with an idea of two different statistical learning methods that I was going to attempt to predict game outcome with. The first was Lasso Regression, and the second was a Random Forest approach. After seeing the first few attempts at each of the models, it became clear that the Random Forest approach would be a much more effective modeling approach so that is what I focused the majority of my time on.
+
+# What is Random Forest?
+
+Random Forest is a 
 
 # Results
 
-Usually you want to have a nice table displaying some important results that you have calculated. In `posterdown` this is as easy as using the `kable` table formatting you are probably use to as per typical R Markdown formatting.
+In the end, I created a random forest model that predicted Rocket League game outcome with 86.35% accuracy. From every model that I created, there became a few clear predictor variables that were the strongest; teams with the most positioning time goalside of the ball and teams who got the most shots off during the game had a much better chance of winning those matches. I think that this helps reinforce the idea that constant pressure in the opponents' half remains the most effective strategy in Rocket League. 
 
-You can reference tables like so: Table \@ref(tab:mytable). Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam placerat augue at velit tincidunt semper. Donec elementum porta posuere. Nullam interdum, odio at tincidunt feugiat, turpis nisi blandit eros, eu posuere risus felis non quam. Nam eget lorem odio. Duis et aliquet orci. Phasellus nec viverra est.
 
 ```{r mytable, out.width='80%'}
 knitr::kable(iris[1:10, 1:4], caption = 'Table caption.',align = 'c',"html")
@@ -72,7 +89,8 @@ Aliquam sed faucibus risus, quis efficitur erat. Vestibulum semper mauris quis t
 
 # Conclusion
 
-Try `posterdown` out! Hopefully you like it!
+Interestingly, although Rocket League coaches are constantly talking about keeping your car's movement speed high throughout the duration of the match, variables related to car speed had little to no effect on predicting game outcome.
+
 
 ```{r, include=FALSE}
 knitr::write_bib(c('knitr','rmarkdown','posterdown','pagedown'), 'packages.bib')

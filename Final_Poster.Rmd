@@ -26,17 +26,17 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Introduction
 
-Welcome to `posterdown` ! This is my attempt to provide a semi-smooth workflow for those who wish to take their R Markdown skills to the conference world. Most features from R Markdown are available in this package such as Markdown section notation, figure captioning, and even citations like this one [@R-rmarkdown]. The rest of this example poster will show how you can insert typical conference poster features into your own document. 
+Welcome to `posterdown` ! This is my attempt to provide a semi-smooth workflow for those who wish to take their R Markdown skills to the conference world. Most features from R Markdown are available in this package such as Markdown section notation, figure captioning, and even citations like this one [@R-rmarkdown]. The rest of this example poster will show how you can insert typical conference poster features into your own document.
 
 ## Objectives
 
-1. Easy to use reproducible poster design. 
-2. Integration with R Markdown.
-3. Easy transition from `posterdown` to `pagedown` report or manuscript documents [@R-pagedown].
+1.  Easy to use reproducible poster design.
+2.  Integration with R Markdown.
+3.  Easy transition from `posterdown` to `pagedown` report or manuscript documents [@R-pagedown].
 
 # Methods
 
-This package uses the same workflow approach as the R Markdown you know and love. Basically it goes from RMarkdown > Knitr > Markdown > Pandoc > HTML/CSS > PDF. You can even use the bibliography the same way [@R-posterdown].
+This package uses the same workflow approach as the R Markdown you know and love. Basically it goes from RMarkdown \> Knitr \> Markdown \> Pandoc \> HTML/CSS \> PDF. You can even use the bibliography the same way [@R-posterdown].
 
 # Results
 

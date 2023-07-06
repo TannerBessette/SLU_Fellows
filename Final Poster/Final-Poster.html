@@ -19,7 +19,7 @@ Google fonts api stuff
 
 
 
-<title>Generate Reproducible &amp; Live HTML and PDF Conference Posters Using RMarkdown</title>
+<title>Predicting Rocket League Game Outcome Through Statistical Modeling</title>
 
 
 
@@ -62,7 +62,7 @@ code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code span.at { color: #7d9029; } /* Attribute */
 code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
+code span.bu { color: #008000; } /* BuiltIn */
 code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
 code span.ch { color: #4070a0; } /* Char */
 code span.cn { color: #880000; } /* Constant */
@@ -75,7 +75,7 @@ code span.er { color: #ff0000; font-weight: bold; } /* Error */
 code span.ex { } /* Extension */
 code span.fl { color: #40a070; } /* Float */
 code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
+code span.im { color: #008000; font-weight: bold; } /* Import */
 code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
 code span.kw { color: #007020; font-weight: bold; } /* Keyword */
 code span.op { color: #666666; } /* Operator */
@@ -345,9 +345,10 @@ font-size: 20pt;
 </div>
 <!-- Poster Title -->
 <div class= "poster_title">
-<h1 id="title">Generate Reproducible &amp; Live HTML and PDF Conference Posters Using RMarkdown</h1>
-<h3 id="author">Brent Thorne<sup>1, <a class="orcid" href="https://orcid.org/0000-0002-1099-3857"><img src="https://raw.githubusercontent.com/brentthorne/posterdown/master/images/orcid.jpg"></a></sup>, Another G. Author<sup>2</sup></h3><br>
-<h5 id="affiliation"><sup>1</sup> Department of Earth Science, Brock University<br> <sup>2</sup> Department of Graphics and Layouts, University of Posters; Canada</h5>
+<h1 id="title">Predicting Rocket League Game Outcome Through Statistical Modeling</h1>
+<h3 id="author">Tanner Bessette<sup></sup>, <p>Faculty Advisor: 
+Professor Higham</p><sup></sup></h3><br>
+<h5 id="affiliation"><sup></sup> Department of Mathematics, Computer Science &amp; Statistics<br> <sup></sup> St. Lawrence University</h5>
 </div>
 <!-- Right Logo  -->
 <div class="logo_right">
@@ -357,26 +358,25 @@ font-size: 20pt;
 
 <div class='poster_body_wrap'>
 <div class='poster_body'>
-<div id="introduction" class="section level1">
-<h1>Introduction</h1>
-<p>Welcome to <code>posterdown</code> ! This is my attempt to provide a semi-smooth workflow for those who wish to take their R Markdown skills to the conference world. Most features from R Markdown are available in this package such as Markdown section notation, figure captioning, and even citations like this one <span class="citation">(Allaire et al. 2022)</span>. The rest of this example poster will show how you can insert typical conference poster features into your own document.</p>
-<div id="objectives" class="section level2">
-<h2>Objectives</h2>
-<ol style="list-style-type: decimal">
-<li>Easy to use reproducible poster design.</li>
-<li>Integration with R Markdown.</li>
-<li>Easy transition from <code>posterdown</code> to <code>pagedown</code> report or manuscript documents <span class="citation">(Xie et al. 2022)</span>.</li>
-</ol>
+<div id="what-is-rocket-league" class="section level1">
+<h1>What is Rocket League?</h1>
+<p>Rocket League is video game soccer played in cars. Each player controls their own car. Games last 5 minutes and the game-mode that I explored for the purposes of this project was the 3v3 mode.</p>
 </div>
+<div id="project-goals" class="section level1">
+<h1>Project Goals</h1>
+<p>The main goal of my project was to train a model on professional Rocket League games and use that model to predict match outcomes (Win/Loss) for other professional Rocket League games. I wanted to get an idea of which variables in the dataset were most associated with winning games (besides obvious predictors like goals scored), and use these findings to figure out whether certain approaches/tactics that different professional teams utilize are more or less effective.</p>
 </div>
 <div id="methods" class="section level1">
 <h1>Methods</h1>
-<p>This package uses the same workflow approach as the R Markdown you know and love. Basically it goes from RMarkdown &gt; Knitr &gt; Markdown &gt; Pandoc &gt; HTML/CSS &gt; PDF. You can even use the bibliography the same way <span class="citation">(Thorne 2019)</span>.</p>
+<p>I went into the project with an idea of two different statistical learning methods that I was going to attempt to predict game outcome with. The first was Lasso Regression, and the second was a Random Forest approach. After seeing the first few attempts at each of the models, it became clear that the Random Forest approach would be a much more effective modeling approach so that is what I focused the majority of my time on.</p>
+</div>
+<div id="what-is-random-forest" class="section level1">
+<h1>What is Random Forest?</h1>
+<p>Random Forest is a</p>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
-<p>Usually you want to have a nice table displaying some important results that you have calculated. In <code>posterdown</code> this is as easy as using the <code>kable</code> table formatting you are probably use to as per typical R Markdown formatting.</p>
-<p>You can reference tables like so: Table <a href="#tab:mytable">1</a>. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam placerat augue at velit tincidunt semper. Donec elementum porta posuere. Nullam interdum, odio at tincidunt feugiat, turpis nisi blandit eros, eu posuere risus felis non quam. Nam eget lorem odio. Duis et aliquet orci. Phasellus nec viverra est.</p>
+<p>In the end, I created a random forest model that predicted Rocket League game outcome with 86.35% accuracy. From every model that I created, there became a few clear predictor variables that were the strongest; teams with the most positioning time goalside of the ball and teams who got the most shots off during the game had a much better chance of winning those matches. I think that this helps reinforce the idea that constant pressure in the opponents’ half remains the most effective strategy in Rocket League.</p>
 <table>
 <caption>
 <span id="tab:mytable">Table 1: </span>Table caption.
@@ -547,14 +547,14 @@ Petal.Width
 Figure 1: Great figure!
 </p>
 </div>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> iris</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="at">x =</span> data<span class="sc">$</span>Sepal.Length, </span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">y =</span> data<span class="sc">$</span>Sepal.Width, </span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> data<span class="sc">$</span>Species,</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">19</span>, </span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;Sepal Length (cm)&quot;</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">&quot;Sepal Width (cm)&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>data <span class="ot">&lt;-</span> iris</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">plot</span>(<span class="at">x =</span> data<span class="sc">$</span>Sepal.Length, </span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>     <span class="at">y =</span> data<span class="sc">$</span>Sepal.Width, </span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>     <span class="at">col =</span> data<span class="sc">$</span>Species,</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">19</span>, </span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;Sepal Length (cm)&quot;</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">&quot;Sepal Width (cm)&quot;</span>)</span></code></pre></div>
 <div class="figure"><span style="display:block;" id="fig:morefigs"></span>
 <img src="Final-Poster_files/figure-html/morefigs-1.png" alt="Amazing, right?!" width="80%" />
 <p class="caption">
@@ -568,19 +568,13 @@ Figure 2: Amazing, right?!
 </div>
 <div id="conclusion" class="section level1">
 <h1>Conclusion</h1>
-<p>Try <code>posterdown</code> out! Hopefully you like it!</p>
+<p>Interestingly, although Rocket League coaches are constantly talking about keeping your car’s movement speed high throughout the duration of the match, variables related to car speed had little to no effect on predicting game outcome.</p>
 </div>
 <div id="references" class="section level1 unnumbered">
 <h1>References</h1>
 <div id="refs" class="references csl-bib-body hanging-indent">
-<div id="ref-R-rmarkdown" class="csl-entry">
-Allaire, JJ, Yihui Xie, Jonathan McPherson, Javier Luraschi, Kevin Ushey, Aron Atkins, Hadley Wickham, Joe Cheng, Winston Chang, and Richard Iannone. 2022. <em>Rmarkdown: Dynamic Documents for r</em>. <a href="https://CRAN.R-project.org/package=rmarkdown">https://CRAN.R-project.org/package=rmarkdown</a>.
-</div>
 <div id="ref-R-posterdown" class="csl-entry">
 Thorne, Brent. 2019. <em>Posterdown: Generate PDF Conference Posters Using r Markdown</em>. <a href="https://github.com/brentthorne/posterdown">https://github.com/brentthorne/posterdown</a>.
-</div>
-<div id="ref-R-pagedown" class="csl-entry">
-Xie, Yihui, Romain Lesur, Brent Thorne, and Xianying Tan. 2022. <em>Pagedown: Paginate the HTML Output of r Markdown with CSS for Print</em>. <a href="https://github.com/rstudio/pagedown">https://github.com/rstudio/pagedown</a>.
 </div>
 </div>
 </div>

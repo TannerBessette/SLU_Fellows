@@ -16,7 +16,7 @@ library(here)
 
 Load in the dataset:
 ```{r}
-rl_df <- read.csv(here("RL_Datasets/games_by_teams.csv"))
+rl_df <- read_csv(here("RL_Datasets/games_by_teams.csv"))
 ```
 
 View variable names in the dataset:

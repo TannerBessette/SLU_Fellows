@@ -21,13 +21,13 @@ library(compr)
 Load in dataset:
 ```{r}
 library(here)
-RL_joined <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/RL_joined.csv", 
-        col_types = cols(winner_factor = readr::col_factor()))
+RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv", 
+        col_types = cols(winner_factor = readr::col_factor())))
 ```
 
 
 ```{r}
-RL_comp_mod <- comp_glm(winner_factor ~ -1, data = RL_joined,
+RL_comp_mod <- comp_glm(winner_numeric ~ -1, data = RL_joined,
                      p1 = "team_id", p2 = "team_id_orange")
 ```
 

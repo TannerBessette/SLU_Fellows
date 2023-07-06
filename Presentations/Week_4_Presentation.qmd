@@ -113,7 +113,7 @@ library(ranger)
 library(vip)
 library(here)
 games_by_players <- 
-  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
+  read_csv(here("RL_Datasets/games_by_players.csv"))
 
 #Calculate the team's standard deviations within each variable within each game:
 team_std <- games_by_players |>

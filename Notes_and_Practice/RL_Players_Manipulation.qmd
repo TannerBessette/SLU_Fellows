@@ -12,10 +12,10 @@ library(GGally)
 
 ```{r}
 matches_by_players <- 
-  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/matches_by_players.csv")
+  read_csv(here("RL_Datasets/matches_by_players.csv"))
 games_by_players <- 
-  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
-team_diff <- read_csv("~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
+  read_csv(here("RL_Datasets/games_by_players.csv"))
+team_diff <- read_csv(here("RL_Datasets/team_diff.csv"))
 ```
 
 ```{r}

@@ -6,7 +6,7 @@ library(dplyr)
 
 
 # read in the team dataset
-rl_df <- read.csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_teams.csv")
+rl_df <- read_csv(here("RL_Datasets/games_by_teams.csv"))
 
 # Create a dataset with all of the diff variables
 team_diff <- rl_df |> pivot_wider(id_cols = game_id, 
@@ -73,7 +73,7 @@ team_diff <- team_diff |>
 
 # Load in the players dataset:
 games_by_players <- 
-  read_csv("~/Desktop/SLU_Fellows/RL_Datasets/games_by_players.csv")
+  read_csv(here("RL_Datasets/games_by_players.csv"))
 
 #Calculate the team's standard deviations within each variable within each game:
 team_std <- games_by_players |>

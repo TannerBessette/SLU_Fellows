@@ -5,7 +5,7 @@ format: html
 
 ```{r}
 RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv"))
-RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"))
 ```
 
 ```{r}

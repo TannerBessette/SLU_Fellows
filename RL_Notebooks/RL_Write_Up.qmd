@@ -21,23 +21,30 @@ library(rpart)
 library(rpart.plot)
 library(knitr)
 library(here)
+library(vip)
+library(caret)
 RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv"))
-RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
+# set themes for all future plots in this write up:
+theme_set(theme_minimal(base_size = 12))
 ```
 
 **Project Introduction:**
 
-  Over the past decade, the world of esports and competitive video-gaming has seen a drastic boom in popularity. One of the most popular esports is Rocket League, which is essentially soccer played in cars. I am a fan of professional Rocket League, and I also have played the video game competitively as a member of the Esports team at St. Lawrence University.
+  Over the past decade, the world of esports and competitive video-gaming has seen a drastic boom in popularity. One of the most popular esports is Rocket League, which is essentially soccer played in cars. I am a fan of professional Rocket League, and I also have played the video game competitively as a member of the esports team at St. Lawrence University.
   
   Rocket League is a video game that can be played on a PC, Xbox, PlayStation, and Nintendo Switch. Much like regular soccer, there is one ball and two goals, and you win by scoring more goals than your opponent. The game is played with a randomly assigned “blue” and “orange” team, and each player controls one rocket-powered car. There are different game modes within the game, but for the purposes of this project I will be focusing on the 3v3 game-mode, which is where the majority of competitive play and money made on the esport is. Rocket League was released by Psyonix on July 7th, 2015.
   
   Despite being released in 2015, the competitive and professional side of the video game is still growing to this day. In 2022, the total prize pool given out by Psyonix alone reached $6,000,000, and there are other non-Psyonix hosted tournaments with cash prizes as well. This past year the video game has expanded to new regions, including Asia-Pacific North, Asia-Pacific South, and Middle East/North Africa. Players are constantly pushing the skill ceiling to re-define what it means to be the best in the world. With these improvements come constantly changing strategy and tactics that make for an even more thrilling viewer experience.
   
   Much like with popular sports such as baseball and football, there is a growing analytical side for assessing performance of some of the most popular esports. These are used to help strategize, coach, and improve competitive gamers’ performances. While analytics are useful to some competitive video games, Rocket League is a relatively new esport, and the statistical side of the game is widely unexplored. As both a fan and a player of Rocket League, and somebody with an interest in statistics and data science in general, I was curious to see if statistical/machine learning algorithms could be applied to predicting game outcomes (whether the team wins or loses the game). These findings could potentially help form different strategies among professional teams and could even help coaches to decide what areas to put more of a focus on going into games.
-  
+
+**Introduction to Dataset/Variables:**
+
   For this project, I only explored the three player vs. three player game-mode and looked at a dataset collected on the main professional competition that runs throughout the year; RLCS (Rocket League Championship Series). All of the data was obtained using octane.gg and ballchasing.com and spans over the course of multiple RLCS events throughout the 2021-2022 season. The dataset includes information on the teams in the match, team statistics (such as saves, assists, shots, etc.), boost statistics (boost used, boost stolen, time spent without boost, etc.), and movement statistics (time spent moving slow, time spent in each team’s half, time spent in air, etc.). Each game in the dataset had two rows, one for the statistics for the losing team and one for the statistics of the winning team. 
   
-  Using this dataset, I created net variables by subtracting all of the blue teams’ stats from all of the orange team’s stats. I did this in order to see for which variables having more or less than your opponent would be positively associated with winning. (For example, are you more likely to win the match if your team records more or less saves than your opponent.) I utilized Lasso Regression and Random Forest models in order to try and predict whether teams would win/lose their match based on the net variables in the dataset.
+  Using this dataset, I created net variables by subtracting all of the blue teams’ stats from all of the orange team’s stats. I did this in order to see for which variables having more or less than your opponent would be positively associated with winning. (For example, are you more likely to win the match if your team records more or less saves than your opponent.) I utilized a Random Forest model approach in order to try and predict whether teams would win/lose their match based on the net variables in the dataset.
 
   Additionally, I wanted to investigate whether of not different team play styles were consistently associated with winning/losing. To tackle this task, I used a dataset of individual player statistics on the same matches that I had used for team data. I wanted to see if teams who had certain players in different roles performed noticeably better/worse than teams who didn't play very positionally. (If one team had a "goalie" player, his saves would be noticeably higher than his teammates, a "goal-scorer" would have higher shots and goals than his teammates, etc.). To tackle this task, within each game for each team I calculated standard deviation variables for all of the variables in the dataset. 
 
@@ -45,14 +52,14 @@ RL_numeric <- read.csv(here("RL_Datasets/RL_numeric.csv"))
 **Investigative Plots:**
   Before creating any models to try to predict game outcome, I did some exploratory plotting of different individual variables in order to get an idea of what variables may have strong correlation with winning games. Unfortunately, out of the 17 variables that I investigated, the majority did not appear to have strong correlation with winning games. However, there were some interesting observations that I made; one in particular that surprised me was that movement speed appears to have little to no correlation to match outcome. As a player myself, we are always coached that keeping your speed as high as possible around the field is vital in order to become a high level player. But, in this dataset of only professional matches, that does not appear to be the case.
 
-  Two variables to note that provided some clear correlation to game outcome were “core_shooting_percentage_diff” (difference in percentage of shots that were “on goal”), and “positioning_time_behind_ball_diff” (difference in amount of time each team spent goal side of the ball). 
+  Two variables to note that provided some clear correlation to game outcome were “core_shots_diff” (difference in shots taken between the two teams), and “positioning_time_behind_ball_diff” (difference in the amount of time each team spent goal side of the ball). 
 
-**core_shooting_percentage_diff plotted against winner:**
+**core_shots_diff plotted against winner:**
 ```{r}
 ggplot(data = RL_joined, aes(x = winner, 
-                             y = core_shooting_percentage_diff)) + 
+                             y = core_shots_diff)) + 
   geom_boxplot(fill="coral1",colour ="black") +
-  labs(y= "Shooting Percentage Difference", x = "Winner")
+  labs(y= "Shots Difference", x = "Winner")
 ```
 
 **postioning_time_behind_ball_diff plotted against winner:**
@@ -65,53 +72,99 @@ ggplot(data = RL_joined, aes(x = winner,
 
 I expected shooting percentage to be a strong predictor but I was surprised to find such a high number of teams that shot with 70-80% higher accuracy than their opponent still managed to lose games. I was also surprised to find such a clear correlation between spending more time behind the ball being so positively associated with winning games. But, it does make sense that if the ball spends more time near your opponent’s goal rather than your goal, that would lead to positive results.
 
-**Random Forest Results:**
+**Methods:**
 
-A random forest model uses a subset of predictor variables from the dataset and creates a collection of "trees" to make its prediction. In this model, the predictor variables the model utilizes are core_shooting_percentage_diff, core_shots_diff, and positioning_time_behind_ball_diff. Each branch gives a variable and a number. When making predictions, we start at the top of the tree and move our way down. For each individual game the model predicts for, if each variable is greater than the given number, it continues down the tree to the left, and if it is less, it continues down the tree to the right.
-
-Let's follow this process along using an example from my model. Taking one random game from the dataset, the random forest model will analyze if the shooting percentage difference is greater than/equal to -1.3, or if it is less than -1.3. If it is greater than -1.3, we follow the model down to the left and next examine if the core shot difference is greater than/equal to or less than -3. Had the shooting percentage difference in the game had been less than -1.3, we would have followed the tree down to the right side and examined how the core shot difference compared to 5. The model continues this process all the way down to the last leg where we classify the game as a win or a loss. In this circumstance, a 1 at the top of the bottom bubble represents a predicted win, and a 0 represents a predicted loss. 
+As I mentioned previously, for this project I used a random forest statistical modeling approach. A random forest model is a type of statistical learning method that combines “decision trees” in order to make a prediction. Each tree is made up of a random subset of predictor variables from the full dataset. The predictions from each of these decision trees are combined to make one final prediction for each observation. 
 
 The random forest approach can be used for two main purposes: classification or regression. Since the goal of my model was to classify games as wins or losses, I used the classification approach.
 
 I started my Random Forest model by making a random train/test split of the data. However, in case there was any chance that the model was yielding higher results because certain series were partially in the training dataset and partially in the test dataset, I created a series_id variable by combining the names of the two teams in the series. When I did my train/test data split, I grouped by series_id so that every series would be entirely in the train set or entirely in the test set.
 
-An important thing to understand in the context of random forest (and statistical modeling in general) is the concept of bootstrapping. Bootstrapping is essentially sampling the set-aside training data with replacement. This process is useful for understanding bias and variance within the dataset. (Kaggle source)
+An important element of the random forest approach is bootstrapping. Bootstrapping is essentially sampling the set-aside training data with replacement to create many different simulated samples. This process is useful for understanding bias and variance present within the dataset. (Kaggle source)
 
-The random forest approach makes use of bagging when creating its model. Bagging starts with creating different training subsets with replacement randomly (bootstrapping).(simplilearn source) Then, a base model is created and fit to each of these subsets of the training data. These models run independently of each other, and final predictions are determined by combining the predictions from all of the models. (Kaggle source) Bagging is one of the advantages of random forest models, because it reduces variations in predictions in the process of combining the results of multiple decision trees on different samples of the training data (edureka source)
+The random forest approach also makes use of bagging when creating its model. Bagging starts with creating different training subsets with replacement randomly (bootstrapping).(simplilearn source) Then, a base model is created and fit to each of these subsets of the training data. These models run independently of each other, and final predictions are determined by combining the predictions from all of the models. (Kaggle source) Bagging is one of the advantages of random forest models, because it reduces variations in predictions in the process of combining the results of multiple decision trees on different samples of the training data. (edureka source)
+
 
 ```{r}
 knitr::include_graphics(here("Images/Bootstrapping_Bagging_img.png"))
 ## source: https://www.simplilearn.com/tutorials/machine-learning-tutorial/bagging-in-machine-learning 
 ```
 
-**_Important side note:_** Bagging is relatively similar to boosting, but they do distinctly differ. The main difference between bagging and boosting is that bagging is performed with all sub-models being completely independent of each other during the process, while boosting is sequential. The goal of boosting is to combine a set of weak predictors into a strong predictor to minimize the model's training error. This is done by having each of the samples of training data created used to fit a model, and then the process continues sequentially. (IBM source) By training sequentially, the model gets stronger and stronger because it attempts to make up for the weaknesses of the model before it. The important thing to note in boosting is that each succeeding model is dependent on the previous model. (Kaggle source) The main difference between gradient boosting modeling and random forest modeling is that the gradient boosting models follow this process of being built additively one after another. (leonlok.uk source) 
+**Random Forest Results:**
 
-Using the dataset with all of the net variables as well as all of the standard deviation variables, I created a random forest model to predict the winner of each game:
+Utilizing the full dataset with all of the net variables as well as all of the standard deviation difference variables, I created a random forest model to predict the winner of each game. Using this random forest model that was trained on the training data, we then tested the model on the test data in order to analyze how strong the model was. The final step in this process was to get predictions on the game outcome of all the games in the RL_test dataset, and see how accurately the model performed:
+
 
 ```{r}
-set.seed(993)
+# set a seed
+set.seed(12)
 RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.5)
 RL_train <- training(RL_splits)
 RL_test <- testing(RL_splits)
 RL_resamples <- group_vfold_cv(RL_train, v = 5, group = series_id)
-RL_train_tree <- tree(winner_factor ~ . - series_id, data = RL_train)
-winner_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
-rpart.plot(winner_tree)
+
+
+# Preprocess the data for modelling
+RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>% 
+  step_rm(series_id) %>%
+  step_normalize(all_numeric_predictors()) 
+
+# Build a random forest model specification
+rf_spec <- rand_forest() %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_wf <- workflow() %>% 
+  add_recipe(RL_recipe) %>% 
+  add_model(rf_spec)
+
+# Fit a model
+rf_wf_fit <- rf_wf %>% 
+  fit(data = RL_train)
+
+# Make predictions on test data
+results <- RL_test %>% select(winner_factor) %>% 
+  bind_cols(rf_wf_fit %>% 
+              predict(new_data = RL_test)) %>% 
+  bind_cols(rf_wf_fit %>% 
+              predict(new_data = RL_test, type = "prob"))
+
+# get results in a confusion matrix:
+results %>% 
+  conf_mat(winner_factor, .pred_class)
+
+# calculate prediction accuracy
+(4615 + 2850)/(4615 + 2850 + 764 + 510)
 ```
 
-The test dataset is the rest of the data that was set aside separate from the data used to train the model. After we have built the model on the training data, it can be applied to the test data to get a more precise idea of how strong our model is. For this project, the random forest appraoch identified the best possible model to include a three predictor subset of the dataset. The three variables selected were all net variables: core_shooting_percentage_diff, core_shots_diff, and positioning_time_behind_ball_diff, and none of the standard deviation variables were selected.
+The model predicted 4615 true positives, 2850 true negatives, 764 false positives, and 510 false negatives. This combines for a total classification accuracy of 85.422%.
 
-The final step in this process was to get predictions on the game outcome of all the games in the RL_test dataset, and see how accurately the model performed:
+A variable importance plot provides a way to analyze the significance of each of the predictors utilized in the random forest model. Below is a variable importance plot that shows the 10 most "important" variables to my random forest model:
 
 ```{r}
-predictions <- predict(RL_train_tree, newdata = RL_test)
-# if more than 50% likely 
-predictions <- if_else(predictions > 0.5, 
-                       true = TRUE, 
-                       false = FALSE)
-accuracy <- mean(predictions == RL_test$winner_factor)
-accuracy
+# Extract the fitted model from the workflow
+rf_wf_fit %>% 
+  extract_fit_parsnip() %>% 
+# Make VIP plot
+  vip(num_features = 15)
 ```
 
-The model correctly identified the winner of the games in the test set with 95.537% accuracy.
+The clear strongest variable in the model was the difference in teams' positioning time behind the ball. The difference in shots taken also proved to be a strong predictor in determining game outcome.
+
+**Conclusion:**
+
+Through exploratory plots and multiple random forest models built, there were an unmistakable two predictors that were stronger than the rest. These variables were the difference in shots taken and the difference in time spent behind (or goalside) of the ball. Itcan be surprising at first that more time spent goal side of the ball provides such a strong chance of winning the game, but from a strategical standpoint it actually makes sense. 
+
+One of the most common tactics in Rocket League that is also prominent in other sports is putting constant pressure on the opposing team. If you are constantly putting the team under pressure, the ball is going to constantly be in the opposing team's defensive half, and they probably will be conceding a lot of shots. If the ball is always in the opposing team's half, you are far more likely to be goalside of the ball, and you are also likely to be the team that got more shots off.
+
+One of the most common things you'll hear from players and coaches if you are a fan of Rocket League is that you should be making an effort to keep your car's speed/momentum high as much as possible throughout the course of the game. Interestingly, there were many variables related to movement speed, and almost none of them were significant predictors at all. The most significant movement variable towards predicting game outcome was movement_time_slow_speed_diff (the difference in the amount of time each team's cars spent moving slow), but even this was not a particularly strong predictor.
+
+One potential explanation for this is that once you reach a high enough level, every player is moving so fast the whole time and every player is capable of playing well while moving fast, that it becomes less of a strategic advantage than it is at some lower ranks in the game. It's entirely possible that for non-professional level players, this is still an extremely important factor, but once you reach a high enough skill level it almost doesn't make a difference.
+
+
+
+
+
+
 

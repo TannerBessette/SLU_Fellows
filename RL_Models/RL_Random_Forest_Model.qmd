@@ -313,7 +313,8 @@ rf_movement_wf_fit %>%
   extract_fit_parsnip() %>% 
 # Make VIP plot
   # num features changes number of variables being chosen, default is 10
-  vip(num_features = 15)
+  vip(num_features = 15) +
+  theme_minimal()
 ```
 
 
