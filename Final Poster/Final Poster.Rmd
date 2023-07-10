@@ -20,7 +20,7 @@ logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/mas
 logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png # this might be controlling posterdown logo in top right and left
 output: 
   posterdown::posterdown_html:
-    self_contained: false
+    self_contained: true
 bibliography: packages.bib
 ---
 
@@ -54,7 +54,7 @@ I went into the project with an idea of two different statistical learning metho
 
 # What is Random Forest?
 
-Random Forest is a 
+A random forest model is a type of statistical learning method that combines “decision trees” in order to make a prediction. Each tree is made up of a random subset of predictor variables from the full dataset. The predictions from each of these decision trees are combined to make one final prediction for each observation. 
 
 # Results
 
@@ -71,16 +71,31 @@ Or with figures: Figure \@ref(fig:standard-plot), or Figure \@ref(fig:morefigs).
 plot(mtcars[1:2])
 ```
 
-```{r morefigs, out.width='80%', echo=TRUE, fig.cap='Amazing, right?!', fig.height=5}
-data <- iris
+```{r morefigs, out.width='80%', echo=FALSE, fig.cap='Amazing, right?!', fig.height=5}
+library(tidyverse)
+library(tidymodels)
+library(tree)
+library(ggplot2)
+library(rpart)
+library(rpart.plot)
+library(knitr)
+library(here)
+library(vip)
+library(caret)
+RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv"))
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
 
-plot(x = data$Sepal.Length, 
-     y = data$Sepal.Width, 
-     col = data$Species,
-     pch = 19, 
-     xlab = "Sepal Length (cm)",
-     ylab = "Sepal Width (cm)")
-
+RL_numeric_tree_example <- RL_numeric |> 
+                  select(c("winner_factor", 
+                           "movement_time_high_air_diff",
+                           "boost_time_zero_boost_diff",
+                           "movement_time_slow_speed_diff",
+                           "positioning_time_defensive_third_diff",
+                           "positioning_time_offensive_half_diff"))
+clean_tree <- rpart(winner_factor ~ ., 
+                    data = RL_numeric_tree_example)
+rpart.plot(clean_tree)
 ```
 
 # Next Steps

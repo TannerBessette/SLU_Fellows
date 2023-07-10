@@ -72,7 +72,7 @@ ggplot(data = RL_joined, aes(x = winner,
   labs(y= "Positioning Time Behind Ball Difference", x = "Winner")
 ```
 
-I expected shooting percentage to be a strong predictor but I was surprised to find such a high number of teams that shot with 70-80% higher accuracy than their opponent still managed to lose games. I was also surprised to find such a clear correlation between spending more time behind the ball being so positively associated with winning games. But, it does make sense that if the ball spends more time near your opponent’s goal rather than your goal, that would lead to positive results.
+I was surprised to find such a clear correlation between spending more time behind the ball being so positively associated with winning games. But, it does make sense that if the ball spends more time near your opponent’s goal rather than your goal, that would lead to positive results.
 
 **Methods:**
 
@@ -132,24 +132,39 @@ results <- RL_test %>% select(winner_factor) %>%
   bind_cols(rf_wf_fit %>% 
               predict(new_data = RL_test, type = "prob"))
 
+
+# KABLE OR PANDER THIS 
 # get results in a confusion matrix:
 results %>% 
   conf_mat(winner_factor, .pred_class)
 
-# calculate prediction accuracy
-(4615 + 2850)/(4615 + 2850 + 764 + 510)
 ```
 
 The model predicted 4615 true positives, 2850 true negatives, 764 false positives, and 510 false negatives. This combines for a total classification accuracy of 85.422%.
 
-A variable importance plot provides a way to analyze the significance of each of the predictors utilized in the random forest model. Below is a variable importance plot that shows the 10 most "important" variables to my random forest model:
+Below is an example of a single decision tree that utilizes the variables boost_time_zero_boost_diff (difference in the amount of time each team's players spent without any boost) and positioning_time_offensive_half_diff (the difference in the amount of time each team spent in the offensive half). In this example, the tree analyzes whether the difference in the time at zero boost is greater or less than 0.8. If it is greater than a 0.8 difference, it then looks to see if the difference in the amount of time spent in the offensive half between the two teams is more or less than 22 before making its prediction.
+
+```{r}
+RL_numeric_tree_example <- RL_numeric |> 
+                  select(c("winner_factor", 
+                           "movement_time_high_air_diff",
+                           "boost_time_zero_boost_diff",
+                           "movement_time_slow_speed_diff",
+                           "positioning_time_defensive_third_diff",
+                           "positioning_time_offensive_half_diff"))
+clean_tree <- rpart(winner_factor ~ ., 
+                    data = RL_numeric_tree_example)
+rpart.plot(clean_tree)
+```
+
+A variable importance plot provides a way to analyze the significance of each of the predictors utilized in the random forest model. Below is a variable importance plot that shows the 10 most important variables to my random forest model, based on Gini impurity:
 
 ```{r}
 # Extract the fitted model from the workflow
 rf_wf_fit %>% 
   extract_fit_parsnip() %>% 
 # Make VIP plot
-  vip(num_features = 15)
+  vip(num_features = 10)
 ```
 
 The clear strongest variable in the model was the difference in teams' positioning time behind the ball. The difference in shots taken also proved to be a strong predictor in determining game outcome.
@@ -163,6 +178,8 @@ One of the most common tactics in Rocket League that is also prominent in other 
 One of the most common things you'll hear from players and coaches if you are a fan of Rocket League is that you should be making an effort to keep your car's speed/momentum high as much as possible throughout the course of the game. Interestingly, there were many variables related to movement speed, and almost none of them were significant predictors at all. The most significant movement variable towards predicting game outcome was movement_time_slow_speed_diff (the difference in the amount of time each team's cars spent moving slow), but even this was not a particularly strong predictor.
 
 One potential explanation for this is that once you reach a high enough level, every player is moving so fast the whole time and every player is capable of playing well while moving fast, that it becomes less of a strategic advantage than it is at some lower ranks in the game. It's entirely possible that for non-professional level players, this is still an extremely important factor, but once you reach a high enough skill level it almost doesn't make a difference.
+
+Another interesting finding through this model was that almost none of the team standard deviation differences proved to be significant predictors. This means that through this model alone, we cannot determine whether different strategies are more or less effective to winning games, because there was no clear correlation. However, it is possible that with further exploration into different team strategies that some may prove to be more effective.
 
 
 

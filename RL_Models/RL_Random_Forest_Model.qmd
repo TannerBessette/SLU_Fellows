@@ -42,7 +42,7 @@ RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>%
   step_normalize(all_numeric_predictors()) 
 
 # Build a random forest model specification
-rf_spec <- rand_forest() %>% 
+rf_spec <- rand_forest(mtry = 15) %>% 
   set_engine("ranger", importance = "impurity") %>% 
   set_mode("classification")
 
@@ -51,9 +51,13 @@ rf_wf <- workflow() %>%
   add_recipe(RL_recipe) %>% 
   add_model(rf_spec)
 
+# Perform cross-validation
+rf_cv <- fit_resamples(rf_wf, RL_numeric, 
+                       resamples = vfold_cv(RL_numeric, v = 3))
+
 # Fit a model
 rf_wf_fit <- rf_wf %>% 
-  fit(data = RL_train)
+  fit(data = rf_cv)
 
 # Make predictions on test data
 results <- RL_test %>% select(winner_factor) %>% 
@@ -319,7 +323,6 @@ rf_movement_wf_fit %>%
 
 
 
-
 Clean visual plot of an example decision tree:
 (now just has positioning time behind ball as only predictor variable)
 ```{r}
@@ -327,6 +330,24 @@ library(rpart)
 library(rpart.plot)
 clean_tree <- rpart(winner_factor ~ . - series_id, data = RL_train)
 clean_tree
+rpart.plot(clean_tree)
+```
+
+
+
+
+
+Create a dataset with just a subset of variables to provide a visual of a single tree:
+```{r}
+RL_numeric_tree_example <- RL_numeric |> 
+                  select(c("winner_factor", 
+                           "movement_time_high_air_diff",
+                           "boost_time_zero_boost_diff",
+                           "movement_time_slow_speed_diff",
+                           "positioning_time_defensive_third_diff",
+                           "positioning_time_offensive_half_diff"))
+clean_tree <- rpart(winner_factor ~ ., 
+                    data = RL_numeric_tree_example)
 rpart.plot(clean_tree)
 ```
 
