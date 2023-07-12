@@ -1,0 +1,58 @@
+---
+title: "RF_Cross_Validation"
+format: html
+---
+
+```{r}
+library(janitor)
+library(tree)
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(caret)
+library(ranger)
+library(vip)
+```
+
+```{r}
+library(here)
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
+RL_numeric_tree_example <- RL_numeric |> 
+                  select(c("winner_factor", 
+                           "movement_time_high_air_diff",
+                           "boost_time_zero_boost_diff",
+                           "movement_time_slow_speed_diff",
+                           "positioning_time_defensive_third_diff",
+                           "positioning_time_offensive_half_diff"))
+```
+
+
+```{r}
+set.seed(345)
+folds <- group_vfold_cv(RL_numeric, group = series_id, v = 10)
+folds
+
+# Build a random forest model specification
+rf_spec <- rand_forest(mtry = 15) %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("classification")
+
+# Bundle recipe and model spec into a workflow
+rf_wf <- workflow()  %>% 
+  add_model(rf_spec) %>%
+  add_formula(winner_factor ~ .)
+
+set.seed(456)
+rf_fit_rs <- 
+  rf_wf %>% 
+  fit_resamples(folds)
+```
+
+```{r}
+rf_fit_rs
+metrics <- collect_metrics(rf_fit_rs)
+kable(metrics)
+```
+
+

@@ -20,20 +20,9 @@ logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/mas
 logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png # this might be controlling posterdown logo in top right and left
 output: 
   posterdown::posterdown_html:
-    self_contained: true
+    self_contained: false
 bibliography: packages.bib
 ---
-
-
-
-
-
-
-
-
-
-
-
 
 
 ```{r setup, include=FALSE}
@@ -71,7 +60,7 @@ Or with figures: Figure \@ref(fig:standard-plot), or Figure \@ref(fig:morefigs).
 plot(mtcars[1:2])
 ```
 
-```{r morefigs, out.width='80%', echo=FALSE, fig.cap='Amazing, right?!', fig.height=5}
+```{r morefigs, out.width='80%', echo=FALSE, message = FALSE, fig.cap='Amazing, right?!', fig.height=5}
 library(tidyverse)
 library(tidymodels)
 library(tree)
