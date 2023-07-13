@@ -7,8 +7,8 @@ affiliation:
   - address: "Department of Mathematics, Computer Science & Statistics"
   - address: "St. Lawrence University"
 column_numbers: 3
-logoright_name: "https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png"
-logoleft_name: "https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png" 
+logoright_name: https&#58;//raw.githubusercontent.com/TannerBessette/SLU_Fellows/main/Images/Rocket_League_Logo.png
+logoleft_name: https&#58;//raw.githubusercontent.com/TannerBessette/SLU_Fellows/main/Images/St_Lawrence_Logo.png
 output: 
   posterdown::posterdown_html:
     sections:
@@ -60,7 +60,9 @@ knitr::opts_chunk$set(echo = FALSE)
 
 -   Dataset collected on the main professional Rocket League competition that runs throughout the year; RLCS
 
--   Spans over the course of multiple professional tournaments throughout the 2021-2022 season\\
+-   Spans over the course of multiple professional tournaments throughout the 2021-2022 season
+
+-   17,484 total games
 
 -   Variables include information on the teams in the match, team statistics (such as saves, assists, shots, etc.), boost statistics (boost used, boost stolen, time spent without boost, etc.), and movement statistics (time spent moving slow, time spent in each team's half, time spent in air, etc.)
 
@@ -98,9 +100,16 @@ knitr::include_graphics(here("Images/Random_Forest_Diagram.png"))
 
 -   Then, "voting" happens; whichever result (win or loss) was predicted by the highest number of decision trees becomes the random forest model's final prediction for that game
 
+-   **(SEE DECISION TREE EXAMPLE TOP RIGHT)**
+
+-   As an example following along with the decision tree, let's say we are observing a Rocket League game where the blue team spent 3 more seconds with zero boost and 15 more seconds in the offensive half than the orange team, (so the variable boost_time_zero_boost_diff = 3 and the variable positioning_time_offensive_half_diff = 15 for this game)
+
+-   Looking at the tree, you start by observing boost time zero boost diff; 3 is greater than 0.8, so it goes down and to the left to examine the positioning time offensive half diff variable. The observed 15 second difference is less than 22 seconds, so it moves down to the left bubble in the bottom row. At the top of that bubble the number is 0, which indicates a predicted loss for blue team. If the top of the bubble would have been a 1, that would have indicated a predicted win for the blue team.
+
 # Decision Tree Example
 
-```{r morefigs, out.width='80%', echo=FALSE, message = FALSE, fig.cap='Amazing, right?!', fig.height=5}
+```{r morefigs, out.width='80%', echo=FALSE, message = FALSE, fig.height = 5}
+#fig.cap='Amazing, right?!'
 library(tidyverse)
 library(tidymodels)
 library(tree)
@@ -139,10 +148,10 @@ rpart.plot(clean_tree)
 
 -   Based on the two most significant indicators of winning being spending more time behind the ball than your opponent and recording more shots than your opponent, it reinforces the idea that you should be keeping constant pressure on your opponent as the most effective Rocket League strategy
 
--   Coaches constantly discuss the importance of keeping speed/momentum high throughout games, but, interestingly, related to car speed proved to have little to no effect on predicting game outcome
+-   Coaches constantly discuss the importance of keeping speed/momentum high throughout games, but, interestingly, variables related to car speed proved to have little to no effect on predicting game outcome
 
 -   Standard deviation difference predictors also proved to not be valuable in predicting game outcome, which means through this model alone we cannot determine whether certain team tactics are more associated with winning games
 
     -   The lack of any association could be because at the highest level of Rocket League, there may not be significant differences in tactical approaches among teams, and players may already have all of their roles set within each team
 
-    -   Also possible that with further exploration into different team strategies, certain strategic approaches may prove to be more effective
+    -   With further exploration, certain strategic approaches may still prove to be more effective

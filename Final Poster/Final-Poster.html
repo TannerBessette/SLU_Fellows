@@ -279,7 +279,7 @@ font-size: 20pt;
 <div class="title_container">
 <!-- Left Logo  -->
 <div class="logo_left">
-<img src= '<a href="https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png" class="uri">https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png</a>' style="width: 80%">
+<img src= 'https://raw.githubusercontent.com/TannerBessette/SLU_Fellows/main/Images/St_Lawrence_Logo.png' style="width: 80%">
 </div>
 <!-- Poster Title -->
 <div class= "poster_title">
@@ -289,7 +289,7 @@ font-size: 20pt;
 </div>
 <!-- Right Logo  -->
 <div class="logo_right">
-<img src=<a href="https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png" class="uri">https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png</a> style="width: 80%">
+<img src=https://raw.githubusercontent.com/TannerBessette/SLU_Fellows/main/Images/Rocket_League_Logo.png style="width: 80%">
 </div>
 </div>
 
@@ -317,7 +317,8 @@ font-size: 20pt;
 <h1>Dataset and Variables</h1>
 <ul>
 <li><p>Dataset collected on the main professional Rocket League competition that runs throughout the year; RLCS</p></li>
-<li><p>Spans over the course of multiple professional tournaments throughout the 2021-2022 season\</p></li>
+<li><p>Spans over the course of multiple professional tournaments throughout the 2021-2022 season</p></li>
+<li><p>17,484 total games</p></li>
 <li><p>Variables include information on the teams in the match, team statistics (such as saves, assists, shots, etc.), boost statistics (boost used, boost stolen, time spent without boost, etc.), and movement statistics (time spent moving slow, time spent in each team’s half, time spent in air, etc.)</p></li>
 <li><p>Each game in the dataset had two rows: one for the statistics of the blue team and one for the statistics of the orange team</p></li>
 <li><p>I calculated net variables by subtracting all of the blue team’s stats from all of the orange team’s stats</p></li>
@@ -344,16 +345,14 @@ font-size: 20pt;
 <li><p>From there, a random subset of variables from the entire dataset (15 variables for each decision tree in my model), are used to create a decision tree that is fit to each of the bootstrapped samples of data</p></li>
 <li><p>Each decision tree runs independently, and makes a classification prediction (predicted win or loss)</p></li>
 <li><p>Then, “voting” happens; whichever result (win or loss) was predicted by the highest number of decision trees becomes the random forest model’s final prediction for that game</p></li>
+<li><p><strong>(SEE DECISION TREE EXAMPLE TOP RIGHT)</strong></p></li>
+<li><p>As an example following along with the decision tree, let’s say we are observing a Rocket League game where the blue team spent 3 more seconds with zero boost and 15 more seconds in the offensive half than the orange team, (so the variable boost_time_zero_boost_diff = 3 and the variable positioning_time_offensive_half_diff = 15 for this game)</p></li>
+<li><p>Looking at the tree, you start by observing boost_time_zero_boost_diff; 3 is greater than 0.8, so it goes down and to the left to examine the positioning_time_offensive_half_diff variable. The observed 15 second difference is less than 22 seconds, so it moves down to the left to the bottom left bubble in the bottom row. At the top of that bubble the number is 0, which indicates a predicted loss for blue team. If the top of the bubble would have been a 1, that would have indicated a predicted win for the blue team.</p></li>
 </ul>
 </div>
 <div id="decision-tree-example" class="section level1">
 <h1>Decision Tree Example</h1>
-<div class="figure"><span style="display:block;" id="fig:morefigs"></span>
-<img src="Final-Poster_files/figure-html/morefigs-1.png" alt="Amazing, right?!" width="80%" />
-<p class="caption">
-Figure 1: Amazing, right?!
-</p>
-</div>
+<p><img src="Final-Poster_files/figure-html/morefigs-1.png" width="80%" /></p>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
@@ -367,11 +366,11 @@ Figure 1: Amazing, right?!
 <h1>Conclusion</h1>
 <ul>
 <li><p>Based on the two most significant indicators of winning being spending more time behind the ball than your opponent and recording more shots than your opponent, it reinforces the idea that you should be keeping constant pressure on your opponent as the most effective Rocket League strategy</p></li>
-<li><p>Coaches constantly discuss the importance of keeping speed/momentum high throughout games, but, interestingly, related to car speed proved to have little to no effect on predicting game outcome</p></li>
+<li><p>Coaches constantly discuss the importance of keeping speed/momentum high throughout games, but, interestingly, variables related to car speed proved to have little to no effect on predicting game outcome</p></li>
 <li><p>Standard deviation difference predictors also proved to not be valuable in predicting game outcome, which means through this model alone we cannot determine whether certain team tactics are more associated with winning games</p>
 <ul>
 <li><p>The lack of any association could be because at the highest level of Rocket League, there may not be significant differences in tactical approaches among teams, and players may already have all of their roles set within each team</p></li>
-<li><p>Also possible that with further exploration into different team strategies, certain strategic approaches may prove to be more effective</p></li>
+<li><p>With further exploration, certain strategic approaches may still prove to be more effective</p></li>
 </ul></li>
 </ul>
 </div>
