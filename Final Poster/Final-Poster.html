@@ -279,18 +279,17 @@ font-size: 20pt;
 <div class="title_container">
 <!-- Left Logo  -->
 <div class="logo_left">
-<img src= 'https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png' style="width: 80%">
+<img src= '<a href="https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png" class="uri">https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png</a>' style="width: 80%">
 </div>
 <!-- Poster Title -->
 <div class= "poster_title">
 <h1 id="title">Predicting Rocket League Game Outcome Through Statistical Modeling</h1>
-<h3 id="author">Tanner Bessette<sup></sup>, <p>Faculty Advisor: 
-Professor Higham</p><sup></sup>, Department of Mathematics, Computer Science &amp; Statistics<sup></sup></h3><br>
+<h3 id="author">By Tanner Bessette<sup></sup>, Faculty Advisor: Professor Matthew Higham<sup></sup></h3><br>
 <h5 id="affiliation"><sup></sup> Department of Mathematics, Computer Science &amp; Statistics<br> <sup></sup> St. Lawrence University</h5>
 </div>
 <!-- Right Logo  -->
 <div class="logo_right">
-<img src=https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png style="width: 80%">
+<img src=<a href="https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png" class="uri">https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png</a> style="width: 80%">
 </div>
 </div>
 
@@ -298,215 +297,83 @@ Professor Higham</p><sup></sup>, Department of Mathematics, Computer Science &am
 <div class='poster_body'>
 <div id="what-is-rocket-league" class="section level1">
 <h1>What is Rocket League?</h1>
-<p>Rocket League is video game soccer played in cars. Each player controls their own car. Games last 5 minutes and the game-mode that I explored for the purposes of this project was the 3v3 mode.</p>
+<ul>
+<li><p>One of the most popular video games/esports in the world</p></li>
+<li><p>Soccer played in cars</p></li>
+<li><p>Every player controls a rocket powered car</p></li>
+<li><p>5 minute games</p></li>
+<li><p>Multiple game modes - but only 3v3 mode explored for this project</p></li>
+</ul>
 </div>
 <div id="project-goals" class="section level1">
 <h1>Project Goals</h1>
-<p>The main goal of my project was to train a model on professional Rocket League games and use that model to predict match outcomes (Win/Loss) for other professional Rocket League games. I wanted to get an idea of which variables in the dataset were most associated with winning games (besides obvious predictors like goals scored), and use these findings to figure out whether certain approaches/tactics that different professional teams utilize are more or less effective.</p>
+<ul>
+<li><p>Train a model on professional Rocket League games and use that model to predict match outcomes (Win/Loss) for other professional Rocket League games</p></li>
+<li><p>Get an idea of which variables are most associated with winning games</p></li>
+<li><p>Potentially use these findings to understand whether certain tactics/strategies used by professional teams are more or less effective</p></li>
+</ul>
+</div>
+<div id="dataset-and-variables" class="section level1">
+<h1>Dataset and Variables</h1>
+<ul>
+<li><p>Dataset collected on the main professional Rocket League competition that runs throughout the year; RLCS</p></li>
+<li><p>Spans over the course of multiple professional tournaments throughout the 2021-2022 season\</p></li>
+<li><p>Variables include information on the teams in the match, team statistics (such as saves, assists, shots, etc.), boost statistics (boost used, boost stolen, time spent without boost, etc.), and movement statistics (time spent moving slow, time spent in each team’s half, time spent in air, etc.)</p></li>
+<li><p>Each game in the dataset had two rows: one for the statistics of the blue team and one for the statistics of the orange team</p></li>
+<li><p>I calculated net variables by subtracting all of the blue team’s stats from all of the orange team’s stats</p></li>
+<li><p>Additionally, I wanted to investigate whether or not different team play styles were consistently associated with winning/losing. To tackle this task, within each game for each team I calculated the standard deviation for all of the variables in the dataset and subsequently calculated the difference in these standard deviations for the blue team minus the orange team.</p></li>
+<li><p>Only variables used in modeling process were the difference variables and the team standard deviation difference variables</p></li>
+</ul>
 </div>
 <div id="methods" class="section level1">
 <h1>Methods</h1>
-<p>I went into the project with an idea of two different statistical learning methods that I was going to attempt to predict game outcome with. The first was Lasso Regression, and the second was a Random Forest approach. After seeing the first few attempts at each of the models, it became clear that the Random Forest approach would be a much more effective modeling approach so that is what I focused the majority of my time on.</p>
+<ul>
+<li><p>Built a random forest statistical model</p>
+<ul>
+<li>Random forest can be classification or regression but for this project I utilized classification (win or loss)</li>
+</ul></li>
+<li><p>Utilized cross validation in the model - a resampling method that creates different splits of training and test data to evaluate model performance</p></li>
+</ul>
 </div>
 <div id="what-is-random-forest" class="section level1">
 <h1>What is Random Forest?</h1>
-<p>A random forest model is a type of statistical learning method that combines “decision trees” in order to make a prediction. Each tree is made up of a random subset of predictor variables from the full dataset. The predictions from each of these decision trees are combined to make one final prediction for each observation.</p>
+<p><img src="../Images/Random_Forest_Diagram.png" width="100%" /></p>
+<ul>
+<li><p>The first step was to perform cross-validation</p></li>
+<li><p>Next, bootstrapping occurs; sampling the set-aside training data with replacement to create many different simulated samples</p></li>
+<li><p>From there, a random subset of variables from the entire dataset (15 variables for each decision tree in my model), are used to create a decision tree that is fit to each of the bootstrapped samples of data</p></li>
+<li><p>Each decision tree runs independently, and makes a classification prediction (predicted win or loss)</p></li>
+<li><p>Then, “voting” happens; whichever result (win or loss) was predicted by the highest number of decision trees becomes the random forest model’s final prediction for that game</p></li>
+</ul>
 </div>
-<div id="results" class="section level1">
-<h1>Results</h1>
-<p>In the end, I created a random forest model that predicted Rocket League game outcome with 86.35% accuracy. From every model that I created, there became a few clear predictor variables that were the strongest; teams with the most positioning time goalside of the ball and teams who got the most shots off during the game had a much better chance of winning those matches. I think that this helps reinforce the idea that constant pressure in the opponents’ half remains the most effective strategy in Rocket League.</p>
-<table>
-<caption>
-<span id="tab:mytable">Table 1: </span>Table caption.
-</caption>
-<thead>
-<tr>
-<th style="text-align:center;">
-Sepal.Length
-</th>
-<th style="text-align:center;">
-Sepal.Width
-</th>
-<th style="text-align:center;">
-Petal.Length
-</th>
-<th style="text-align:center;">
-Petal.Width
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center;">
-5.1
-</td>
-<td style="text-align:center;">
-3.5
-</td>
-<td style="text-align:center;">
-1.4
-</td>
-<td style="text-align:center;">
-0.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-4.9
-</td>
-<td style="text-align:center;">
-3.0
-</td>
-<td style="text-align:center;">
-1.4
-</td>
-<td style="text-align:center;">
-0.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-4.7
-</td>
-<td style="text-align:center;">
-3.2
-</td>
-<td style="text-align:center;">
-1.3
-</td>
-<td style="text-align:center;">
-0.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-4.6
-</td>
-<td style="text-align:center;">
-3.1
-</td>
-<td style="text-align:center;">
-1.5
-</td>
-<td style="text-align:center;">
-0.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-5.0
-</td>
-<td style="text-align:center;">
-3.6
-</td>
-<td style="text-align:center;">
-1.4
-</td>
-<td style="text-align:center;">
-0.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-5.4
-</td>
-<td style="text-align:center;">
-3.9
-</td>
-<td style="text-align:center;">
-1.7
-</td>
-<td style="text-align:center;">
-0.4
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-4.6
-</td>
-<td style="text-align:center;">
-3.4
-</td>
-<td style="text-align:center;">
-1.4
-</td>
-<td style="text-align:center;">
-0.3
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-5.0
-</td>
-<td style="text-align:center;">
-3.4
-</td>
-<td style="text-align:center;">
-1.5
-</td>
-<td style="text-align:center;">
-0.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-4.4
-</td>
-<td style="text-align:center;">
-2.9
-</td>
-<td style="text-align:center;">
-1.4
-</td>
-<td style="text-align:center;">
-0.2
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-4.9
-</td>
-<td style="text-align:center;">
-3.1
-</td>
-<td style="text-align:center;">
-1.5
-</td>
-<td style="text-align:center;">
-0.1
-</td>
-</tr>
-</tbody>
-</table>
-<p>Or with figures: Figure <a href="#fig:standard-plot">1</a>, or Figure <a href="#fig:morefigs">2</a>.</p>
-<div class="figure" style="text-align: center"><span style="display:block;" id="fig:standard-plot"></span>
-<img src="Final-Poster_files/figure-html/standard-plot-1.png" alt="Great figure!" width="80%" />
-<p class="caption">
-Figure 1: Great figure!
-</p>
-</div>
+<div id="decision-tree-example" class="section level1">
+<h1>Decision Tree Example</h1>
 <div class="figure"><span style="display:block;" id="fig:morefigs"></span>
 <img src="Final-Poster_files/figure-html/morefigs-1.png" alt="Amazing, right?!" width="80%" />
 <p class="caption">
-Figure 2: Amazing, right?!
+Figure 1: Amazing, right?!
 </p>
 </div>
 </div>
-<div id="next-steps" class="section level1">
-<h1>Next Steps</h1>
-<p>Aliquam sed faucibus risus, quis efficitur erat. Vestibulum semper mauris quis tempus eleifend. Aliquam sagittis dictum ipsum, quis viverra ligula eleifend ut. Curabitur sagittis vitae arcu eget faucibus. In non elementum felis. Duis et aliquam nunc. Nunc pulvinar sapien nunc, vel pretium nisi efficitur in. Fusce fringilla maximus leo et maximus. Fusce at ligula laoreet, iaculis mi at, auctor odio. Praesent sed elementum justo. Aenean consectetur risus rhoncus tincidunt efficitur. Praesent dictum mauris at diam maximus maximus <span class="citation">(Thorne 2019)</span>.</p>
+<div id="results" class="section level1">
+<h1>Results</h1>
+<ul>
+<li><p>Final random forest model predicted Rocket League game outcome with <strong>86.35% accuracy</strong></p></li>
+<li><p>Two clear strongest predictor variables: difference in positioning time behind the ball and difference in shots</p></li>
+<li><p>None of the standard deviation differences proved to be significant predictors</p></li>
+</ul>
 </div>
 <div id="conclusion" class="section level1">
 <h1>Conclusion</h1>
-<p>Interestingly, although Rocket League coaches are constantly talking about keeping your car’s movement speed high throughout the duration of the match, variables related to car speed had little to no effect on predicting game outcome.</p>
-</div>
-<div id="references" class="section level1 unnumbered">
-<h1>References</h1>
-<div id="refs" class="references csl-bib-body hanging-indent">
-<div id="ref-R-posterdown" class="csl-entry">
-Thorne, Brent. 2019. <em>Posterdown: Generate PDF Conference Posters Using r Markdown</em>. <a href="https://github.com/brentthorne/posterdown">https://github.com/brentthorne/posterdown</a>.
-</div>
-</div>
+<ul>
+<li><p>Based on the two most significant indicators of winning being spending more time behind the ball than your opponent and recording more shots than your opponent, it reinforces the idea that you should be keeping constant pressure on your opponent as the most effective Rocket League strategy</p></li>
+<li><p>Coaches constantly discuss the importance of keeping speed/momentum high throughout games, but, interestingly, related to car speed proved to have little to no effect on predicting game outcome</p></li>
+<li><p>Standard deviation difference predictors also proved to not be valuable in predicting game outcome, which means through this model alone we cannot determine whether certain team tactics are more associated with winning games</p>
+<ul>
+<li><p>The lack of any association could be because at the highest level of Rocket League, there may not be significant differences in tactical approaches among teams, and players may already have all of their roles set within each team</p></li>
+<li><p>Also possible that with further exploration into different team strategies, certain strategic approaches may prove to be more effective</p></li>
+</ul></li>
+</ul>
 </div>
 </div>
 </div>

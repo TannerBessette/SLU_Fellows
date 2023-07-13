@@ -1,29 +1,36 @@
 ---
-title: Predicting Rocket League Game Outcome Through Statistical Modeling
+title: "Predicting Rocket League Game Outcome Through Statistical Modeling"
 author:
-  - name: Tanner Bessette
-    affil: 
-    orcid: 
-  - name: |
-      Faculty Advisor:&nbsp;
-      Professor Higham
-    affil: 
-  - name: Department of Mathematics, Computer Science & Statistics
-    
+  - name: "By Tanner Bessette"
+  - name: "Faculty Advisor: Professor Matthew Higham"
 affiliation: 
-  - num: 
-    address: Department of Mathematics, Computer Science & Statistics
-  - num: 
-    address: St. Lawrence University
+  - address: "Department of Mathematics, Computer Science & Statistics"
+  - address: "St. Lawrence University"
 column_numbers: 3
-logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
-logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png # this might be controlling posterdown logo in top right and left
+logoright_name: "https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png"
+logoleft_name: "https://raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png" 
 output: 
   posterdown::posterdown_html:
+    sections:
+      - name: "What is Rocket League?"
+        colspan: 1
+      - name: "Project Goals"
+        colspan: 1
+        start: 2
+      - name: "Methods"
+        colspan: 1
+      - name: "What is Random Forest?"
+        colspan: 1
+      - name: "Decision Tree Example"
+        colspan: 1
+        start: 2
+      - name: "Results"
+        colspan: 1
+      - name: "Conclusion"
+        colspan: 1
     self_contained: false
 bibliography: packages.bib
 ---
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -31,34 +38,67 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # What is Rocket League?
 
-Rocket League is video game soccer played in cars. Each player controls their own car. Games last 5 minutes and the game-mode that I explored for the purposes of this project was the 3v3 mode.
+-   One of the most popular video games/esports in the world
+
+-   Soccer played in cars
+
+-   Every player controls a rocket powered car
+
+-   5 minute games
+
+-   Multiple game modes - but only 3v3 mode explored for this project
 
 # Project Goals
 
-The main goal of my project was to train a model on professional Rocket League games and use that model to predict match outcomes (Win/Loss) for other professional Rocket League games. I wanted to get an idea of which variables in the dataset were most associated with winning games (besides obvious predictors like goals scored), and use these findings to figure out whether certain approaches/tactics that different professional teams utilize are more or less effective.
+-   Train a model on professional Rocket League games and use that model to predict match outcomes (Win/Loss) for other professional Rocket League games
+
+-   Get an idea of which variables are most associated with winning games
+
+-   Potentially use these findings to understand whether certain tactics/strategies used by professional teams are more or less effective
+
+# Dataset and Variables
+
+-   Dataset collected on the main professional Rocket League competition that runs throughout the year; RLCS
+
+-   Spans over the course of multiple professional tournaments throughout the 2021-2022 season\\
+
+-   Variables include information on the teams in the match, team statistics (such as saves, assists, shots, etc.), boost statistics (boost used, boost stolen, time spent without boost, etc.), and movement statistics (time spent moving slow, time spent in each team's half, time spent in air, etc.)
+
+-   Each game in the dataset had two rows: one for the statistics of the blue team and one for the statistics of the orange team
+
+-   I calculated net variables by subtracting all of the blue team's stats from all of the orange team's stats
+
+-   Additionally, I wanted to investigate whether or not different team play styles were consistently associated with winning/losing. To tackle this task, within each game for each team I calculated the standard deviation for all of the variables in the dataset and subsequently calculated the difference in these standard deviations for the blue team minus the orange team.
+
+-   Only variables used in modeling process were the difference variables and the team standard deviation difference variables
 
 # Methods
 
-I went into the project with an idea of two different statistical learning methods that I was going to attempt to predict game outcome with. The first was Lasso Regression, and the second was a Random Forest approach. After seeing the first few attempts at each of the models, it became clear that the Random Forest approach would be a much more effective modeling approach so that is what I focused the majority of my time on.
+-   Built a random forest statistical model
+
+    -   Random forest can be classification or regression but for this project I utilized classification (win or loss)
+
+-   Utilized cross validation in the model - a resampling method that creates different splits of training and test data to evaluate model performance
 
 # What is Random Forest?
 
-A random forest model is a type of statistical learning method that combines “decision trees” in order to make a prediction. Each tree is made up of a random subset of predictor variables from the full dataset. The predictions from each of these decision trees are combined to make one final prediction for each observation. 
-
-# Results
-
-In the end, I created a random forest model that predicted Rocket League game outcome with 86.35% accuracy. From every model that I created, there became a few clear predictor variables that were the strongest; teams with the most positioning time goalside of the ball and teams who got the most shots off during the game had a much better chance of winning those matches. I think that this helps reinforce the idea that constant pressure in the opponents' half remains the most effective strategy in Rocket League. 
-
-
-```{r mytable, out.width='80%'}
-knitr::kable(iris[1:10, 1:4], caption = 'Table caption.',align = 'c',"html")
+```{r echo = FALSE, message = FALSE, out.width = "100%"}
+library(here)
+knitr::include_graphics(here("Images/Random_Forest_Diagram.png"))
+## source: https://www.analyticsvidhya.com/blog/2022/07/data-science-interview-series-part-2-random-forest-and-svm/'
 ```
 
-Or with figures: Figure \@ref(fig:standard-plot), or Figure \@ref(fig:morefigs).
+-   The first step was to perform cross-validation
 
-```{r standard-plot, out.width='80%', fig.align='center', fig.cap='Great figure!', fig.height=5}
-plot(mtcars[1:2])
-```
+-   Next, bootstrapping occurs; sampling the set-aside training data with replacement to create many different simulated samples
+
+-   From there, a random subset of variables from the entire dataset (15 variables for each decision tree in my model), are used to create a decision tree that is fit to each of the bootstrapped samples of data
+
+-   Each decision tree runs independently, and makes a classification prediction (predicted win or loss)
+
+-   Then, "voting" happens; whichever result (win or loss) was predicted by the highest number of decision trees becomes the random forest model's final prediction for that game
+
+# Decision Tree Example
 
 ```{r morefigs, out.width='80%', echo=FALSE, message = FALSE, fig.cap='Amazing, right?!', fig.height=5}
 library(tidyverse)
@@ -87,17 +127,22 @@ clean_tree <- rpart(winner_factor ~ .,
 rpart.plot(clean_tree)
 ```
 
-# Next Steps
+# Results
 
-Aliquam sed faucibus risus, quis efficitur erat. Vestibulum semper mauris quis tempus eleifend. Aliquam sagittis dictum ipsum, quis viverra ligula eleifend ut. Curabitur sagittis vitae arcu eget faucibus. In non elementum felis. Duis et aliquam nunc. Nunc pulvinar sapien nunc, vel pretium nisi efficitur in. Fusce fringilla maximus leo et maximus. Fusce at ligula laoreet, iaculis mi at, auctor odio. Praesent sed elementum justo. Aenean consectetur risus rhoncus tincidunt efficitur. Praesent dictum mauris at diam maximus maximus [@R-posterdown].
+-   Final random forest model predicted Rocket League game outcome with **86.35% accuracy**
+
+-   Two clear strongest predictor variables: difference in positioning time behind the ball and difference in shots
+
+-   None of the standard deviation differences proved to be significant predictors
 
 # Conclusion
 
-Interestingly, although Rocket League coaches are constantly talking about keeping your car's movement speed high throughout the duration of the match, variables related to car speed had little to no effect on predicting game outcome.
+-   Based on the two most significant indicators of winning being spending more time behind the ball than your opponent and recording more shots than your opponent, it reinforces the idea that you should be keeping constant pressure on your opponent as the most effective Rocket League strategy
 
+-   Coaches constantly discuss the importance of keeping speed/momentum high throughout games, but, interestingly, related to car speed proved to have little to no effect on predicting game outcome
 
-```{r, include=FALSE}
-knitr::write_bib(c('knitr','rmarkdown','posterdown','pagedown'), 'packages.bib')
-```
+-   Standard deviation difference predictors also proved to not be valuable in predicting game outcome, which means through this model alone we cannot determine whether certain team tactics are more associated with winning games
 
-# References
+    -   The lack of any association could be because at the highest level of Rocket League, there may not be significant differences in tactical approaches among teams, and players may already have all of their roles set within each team
+
+    -   Also possible that with further exploration into different team strategies, certain strategic approaches may prove to be more effective
