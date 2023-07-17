@@ -1,0 +1,80 @@
+---
+title: "Team_Records_Dataset"
+format: html
+---
+
+```{r}
+# Load in required packages and datasets
+library(tidyverse)
+library(here)
+team_diff <- 
+  read_csv(here("RL_Datasets/team_diff.csv"))
+RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv"))
+RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
+        col_types = cols(winner_factor = readr::col_factor()))
+
+```
+
+Make single row subset of RL_numeric to show on poster:
+```{r}
+# choose certain example variables to show
+RL_example_row <- RL_numeric |> 
+                select(winner_factor,
+                    movement_time_supersonic_speed_diff,
+                    positioning_time_defensive_half_diff,
+                    core_shots_diff,
+                    boost_avg_amount_diff) 
+
+# pick a row from the dataset
+RL_example_row <- RL_example_row[2, ]
+
+```
+
+
+Make dataset with every team's record in it:
+```{r}
+# make table with all of the home wins and losses
+home_wins_losses_table <- team_diff %>%
+  group_by(team_id) %>%
+  summarize(home_wins = sum(winner_factor == 1),
+            home_losses = sum(winner_factor == 0)) 
+
+# make table with all of the away wins and losses
+away_wins_losses_table <- team_diff %>%
+  group_by(team_id_orange) %>% 
+  summarize(away_losses = sum(winner_factor == 1),
+            away_wins = sum(winner_factor == 0))
+
+# rename to team_id so that they have the same key to join
+away_wins_losses_table <- away_wins_losses_table %>% 
+  rename(team_id = team_id_orange)
+
+# join the home and away wins and losses tables
+wins_losses_table <- home_wins_losses_table %>%
+  left_join(away_wins_losses_table, by = "team_id")
+
+# calculate total wins by adding away and home wins together
+wins_losses_table <- wins_losses_table %>%
+          mutate(total_wins = home_wins + away_wins) %>%
+          mutate(total_losses = home_losses + away_losses) %>%
+  select(team_id, total_wins, total_losses)
+
+# make a version of team_diff dataset that has 
+# just the team name and id variables
+team_names <- team_diff %>% select(team_name, team_id) %>% distinct()
+
+# get the team names in the table with wins and losses
+joined_table <- wins_losses_table %>%
+  left_join(team_names, by = "team_id") %>%
+  select(team_id, team_name, total_wins, total_losses)
+
+# Here is the final table with team_id, team_name, and total wins and losses
+joined_table
+
+```
+
+
+
+
+
+
