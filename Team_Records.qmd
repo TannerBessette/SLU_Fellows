@@ -18,12 +18,17 @@ RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"),
 Make single row subset of RL_numeric to show on poster:
 ```{r}
 # choose certain example variables to show
-RL_example_row <- RL_numeric |> 
+RL_example_row <- RL_numeric %>%
                 select(winner_factor,
                     movement_time_supersonic_speed_diff,
                     positioning_time_defensive_half_diff,
                     core_shots_diff,
+                    sd_core_shots_blue_diff,
                     boost_avg_amount_diff) 
+
+# rename sd_core_shots_blue_diff
+RL_example_row <- RL_example_row %>% 
+  rename(sd_core_shots_diff = sd_core_shots_blue_diff)
 
 # pick a row from the dataset
 RL_example_row <- RL_example_row[2, ]

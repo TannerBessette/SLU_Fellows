@@ -299,16 +299,15 @@ font-size: 20pt;
 <h1>What is Rocket League?</h1>
 <ul>
 <li><p>One of the most popular video games/esports in the world</p></li>
-<li><p>Soccer played in cars</p></li>
+<li><p>5 minute soccer games played in cars</p></li>
 <li><p>Every player controls a rocket powered car</p></li>
-<li><p>5 minute games</p></li>
 <li><p>Multiple game modes - but only 3v3 mode explored for this project</p></li>
 </ul>
 </div>
 <div id="project-goals" class="section level1">
 <h1>Project Goals</h1>
 <ul>
-<li><p>Train a model on professional Rocket League games and use that model to predict match outcomes (Win/Loss) for other professional Rocket League games</p></li>
+<li><p>Train a model on professional Rocket League games and use that model to predict match outcomes (win/loss) for other professional Rocket League games</p></li>
 <li><p>Get an idea of which variables are most associated with winning games</p></li>
 <li><p>Potentially use these findings to understand whether certain tactics/strategies used by professional teams are more or less effective</p></li>
 </ul>
@@ -316,14 +315,11 @@ font-size: 20pt;
 <div id="dataset-and-variables" class="section level1">
 <h1>Dataset and Variables</h1>
 <ul>
-<li><p>Dataset collected on the main professional Rocket League competition that runs throughout the year; RLCS</p></li>
-<li><p>Spans over the course of multiple professional tournaments throughout the 2021-2022 season</p></li>
-<li><p>17,484 total games</p></li>
-<li><p>Variables include information on the teams in the match, team statistics (such as saves, assists, shots, etc.), boost statistics (boost used, boost stolen, time spent without boost, etc.), and movement statistics (time spent moving slow, time spent in each team’s half, time spent in air, etc.)</p></li>
-<li><p>Each game in the dataset had two rows: one for the statistics of the blue team and one for the statistics of the orange team</p></li>
-<li><p>I calculated net variables by subtracting all of the blue team’s stats from all of the orange team’s stats</p></li>
+<li><p>Data spans over the course of multiple professional tournaments throughout the 2021-2022 Rocket League Championship Series season (17,484 total games)</p></li>
+<li><p>Team difference variables were created for each game by subtracting all of the orange team’s stats from the blue team’s stats</p></li>
 <li><p>Additionally, I wanted to investigate whether or not different team play styles were consistently associated with winning/losing. To tackle this task, within each game for each team I calculated the standard deviation for all of the variables in the dataset and subsequently calculated the difference in these standard deviations for the blue team minus the orange team.</p></li>
-<li><p>Only variables used in modeling process were the difference variables and the team standard deviation difference variables</p></li>
+<li><p>Here’s an example of a row of data and a subset of some variables in the dataset that I used:</p>
+<p><img src="../Images/Dataset_row.png" width="100%" height="200%" /></p></li>
 </ul>
 </div>
 <div id="methods" class="section level1">
@@ -340,26 +336,30 @@ font-size: 20pt;
 <h1>What is Random Forest?</h1>
 <p><img src="../Images/Random_Forest_Diagram.png" width="100%" /></p>
 <ul>
-<li><p>The first step was to perform cross-validation</p></li>
-<li><p>Next, bootstrapping occurs; sampling the set-aside training data with replacement to create many different simulated samples</p></li>
+<li><p>After cross-validation, bootstrapping occurs; the set-aside training data is sampled with replacement to create many different simulated samples</p></li>
 <li><p>From there, a random subset of variables from the entire dataset (15 variables for each decision tree in my model), are used to create a decision tree that is fit to each of the bootstrapped samples of data</p></li>
 <li><p>Each decision tree runs independently, and makes a classification prediction (predicted win or loss)</p></li>
 <li><p>Then, “voting” happens; whichever result (win or loss) was predicted by the highest number of decision trees becomes the random forest model’s final prediction for that game</p></li>
-<li><p><strong>(SEE DECISION TREE EXAMPLE TOP RIGHT)</strong></p></li>
-<li><p>As an example following along with the decision tree, let’s say we are observing a Rocket League game where the blue team spent 3 more seconds with zero boost and 15 more seconds in the offensive half than the orange team, (so the variable boost_time_zero_boost_diff = 3 and the variable positioning_time_offensive_half_diff = 15 for this game)</p></li>
-<li><p>Looking at the tree, you start by observing boost_time_zero_boost_diff; 3 is greater than 0.8, so it goes down and to the left to examine the positioning_time_offensive_half_diff variable. The observed 15 second difference is less than 22 seconds, so it moves down to the left to the bottom left bubble in the bottom row. At the top of that bubble the number is 0, which indicates a predicted loss for blue team. If the top of the bubble would have been a 1, that would have indicated a predicted win for the blue team.</p></li>
 </ul>
 </div>
 <div id="decision-tree-example" class="section level1">
 <h1>Decision Tree Example</h1>
 <p><img src="Final-Poster_files/figure-html/morefigs-1.png" width="80%" /></p>
+<ul>
+<li><p>As an example following along with the decision tree, let’s observe a Rocket League game where boost_time_zero_boost_diff = 3 and positioning_time_offensive_half_diff = 15</p></li>
+<li><p>Looking at the tree, you start by observing boost time zero boost diff; 3 is greater than 0.8, so it goes down to the left bubble in the bottom row. At the top of that bubble the number is 0, which indicates a predicted loss for blue team.</p></li>
+</ul>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
 <ul>
-<li><p>Final random forest model predicted Rocket League game outcome with <strong>86.35% accuracy</strong></p></li>
+<li>Difference in time spent goalside of the ball, difference in shots, difference in the amount of time the balls spent in your own half, and difference in saves proved to be the 4 most important variables in predicting game outcome:</li>
+</ul>
+<pre><code>&lt;img src=&quot;Final-Poster_files/figure-html/unnamed-chunk-3-1.png&quot; width=&quot;80%&quot; /&gt;</code></pre>
+<ul>
 <li><p>Two clear strongest predictor variables: difference in positioning time behind the ball and difference in shots</p></li>
 <li><p>None of the standard deviation differences proved to be significant predictors</p></li>
+<li><p>Final random forest model predicted Rocket League game outcome with <strong>86.35% accuracy</strong></p></li>
 </ul>
 </div>
 <div id="conclusion" class="section level1">

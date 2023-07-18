@@ -65,7 +65,7 @@ team_diff <- team_diff |>
          everything())
 
 # Output the csv file for team_diff dataset:
-# write_csv(x = team_diff, "~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
+write_csv(x = team_diff, "~/Desktop/SLU_Fellows/RL_Datasets/team_diff.csv")
 
 
 
