@@ -1,8 +1,8 @@
 ---
 title: "Predicting Rocket League Game Outcome Through Statistical Modeling"
 author:
-  - name: "By Tanner Bessette"
-  - name: "Faculty Advisor: Professor Matthew Higham"
+  - name: "By Tanner Bessette" 
+  - name: "Faculty Advisor: Professor Matt Higham"
 affiliation: 
   - address: "Department of Mathematics, Computer Science & Statistics"
   - address: "St. Lawrence University"
@@ -17,8 +17,6 @@ output:
       - name: "Project Goals"
         colspan: 1
         start: 2
-      - name: "Methods"
-        colspan: 1
       - name: "What is Random Forest?"
         colspan: 1
       - name: "Decision Tree Example"
@@ -40,31 +38,21 @@ knitr::opts_chunk$set(echo = FALSE)
 
 -   One of the most popular video games/esports in the world
 
--   5 minute soccer games played in cars
-
--   Every player controls a rocket powered car
-
--   Multiple game modes - but only 3v3 mode explored for this project
+-   5 minute soccer games played in teams of 3 in rocket-powered cars
 
 # Project Goals
 
--   Train a model on professional Rocket League games and use that model to predict match outcomes (win/loss) for other professional Rocket League games
+-   Train a model on professional Rocket League games to predict match outcomes (win/loss) for Rocket League games
 
--   Get an idea of which variables are most associated with winning games
+-   Assess which variables are most associated with winning games
 
--   Potentially use these findings to understand whether certain tactics/strategies used by professional teams are more or less effective
+-   Explain how certain tactics/strategies used by professional teams are more or less effective
 
 # Dataset and Variables
 
 -   Data spans multiple Rocket League Championship Series tournaments throughout 2021-2022
 
--   Team difference variables were created for each game by calculating blue team's stats - orange team's stats
-
--   Investigating different play styles involved:
-
-    -   Calculating standard deviations per team per game for all variables
-
-    -   Calculating standard deviation differences (blue team - orange team)
+-   Team difference variables were created for each game by calculating blue team's stats minus orange team's stats
 
 -   Example of row of data and some variables in the dataset:
 
@@ -97,19 +85,28 @@ knitr::opts_chunk$set(echo = FALSE)
 
     # output an image of this row of data:
 
-    RL_example_row
+    RL_example_row |> knitr::kable()
     # image of it: knitr::include_graphics(here("Images/Dataset_row.png"))
     ```
 
-# Methods
+* Variable descriptions:
 
--   Built a random forest statistical model
+    * `winner` is a `1` if blue team won, `0` if orange team won
+    * `supersonic_diff` is the difference (blue minus orange) in total supersonic speed
+    * `sd_shots_diff` is the difference (blue minus orange) in the standard deviation of shots taken across the three players on the team
 
-    -   Utilized classification approach to predict win/loss
 
--   Incorporated cross validation in the model - a resampling method that creates different splits of training and test data to evaluate model performance
+
 
 # What is Random Forest?
+
+1. A subset of the data, called the _training data_, is sampled with replacement in what is known as a _bootstrap sample_.
+
+2. A random subset of variables are used to create a decision tree for the bootstrap sample.
+
+3. The decision tree classifies each observation in a different subset of the data, known as the _test data_, as a win or loss. 
+
+4. The process is repeated thousands of times: the result that was predicted by the highest number of decision trees is the model's final prediction for that observation.
 
 ```{r echo = FALSE, message = FALSE, out.width = "100%"}
 library(here)
@@ -117,17 +114,12 @@ knitr::include_graphics(here("Images/Canva_RF.png"))
 ## source: https://www.analyticsvidhya.com/blog/2022/07/data-science-interview-series-part-2-random-forest-and-svm/'
 ```
 
--   After cross-validation, bootstrapping occurs; the set-aside training data is sampled with replacement to create many different simulated samples
 
--   Next, a random subset of variables from the full dataset are used to create a decision tree that is fit to each bootstrapped sample
 
--   Each decision tree runs independently, and makes a classification prediction (predicted win or loss)
 
--   Whichever result was predicted by the highest number of decision trees is the model's final prediction
+# Decision Tree Example
 
--   Here's an example of a single decision tree:
-
-    ```{r morefigs, out.width='90%', echo=FALSE, message = FALSE, fig.height = 4}
+```{r morefigs, out.width='90%', echo=FALSE, message = FALSE, fig.height = 4}
     #fig.cap='Amazing, right?!'
     library(tidyverse)
     library(tidymodels)
@@ -156,15 +148,13 @@ knitr::include_graphics(here("Images/Canva_RF.png"))
     clean_tree <- rpart(winner_factor ~ ., 
                         data = RL_numeric_tree_example)
     rpart.plot(clean_tree)
-    ```
+```
 
-# Decision Tree Example
+-   Suppose there is a Rocket League game where `boost_time_zero_boost_diff` = `-1` and `positioning_time_offensive_half_diff` = `15`
 
--   Let's observe a Rocket League game where boost time zero boost diff = -1 and positioning time offensive half diff = 15
+-   In the first branch, `-1` is less than `0.8`, so the game is predicted to be a `1`, which corresponds to the blue team winning
 
--   Start by observing boost time zero boost diff; -1 is less than 0.8, so it goes down to the right bubble in the bottom row
-
--   At the top of that bubble is the number 1, which indicates a predicted win for blue team
+- TANNER: THERE SHOULD NOW BE SPACE HERE TO REMIND READER THAT -1 CORRESPONDS TO ORANGE TEAM HAVING 1 MORE UNIT OF ZERO BOOST TIME THAN THE BLUE TEAM (no need to put this in the poster but just so you are aware: the cutoff point is not zero because the blue team won more often than the orange team in the data. we think they were the higher seeded team)
 
 # Results
 
@@ -203,7 +193,8 @@ vip_plot <- rf_wf_fit %>%
 
 # Make VIP plot
 vip_plot <- vip(vip_plot, num_features = 4) +
-  labs(color = "marital")
+  labs(color = "marital") +
+  theme_minimal()
 
 # plot 
 print(vip_plot)
@@ -211,7 +202,13 @@ print(vip_plot)
 # potentially add back to conclusion: , and players may already have all of their roles set within each team
 ```
 
--   Two clear strongest predictor variables: difference in positioning time behind the ball and difference in shots
+TANNER: THERE SHOULD NOW BE ROOM TO EXPAND THE GRAPH IF YOU WANT TO TO SHOW MORE PREDICTORS.
+
+-   Two clear strongest predictor variables: 
+
+    - difference in positioning time behind the ball
+    
+    - difference in shots
 
 -   None of the car speed predictors proved to be strong predictors
 
