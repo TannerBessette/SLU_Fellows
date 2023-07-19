@@ -56,13 +56,17 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Dataset and Variables
 
--   Data spans over the course of multiple professional tournaments throughout the 2021-2022 Rocket League Championship Series season (17,484 total games)
+-   Data spans multiple Rocket League Championship Series tournaments throughout 2021-2022
 
--   Team difference variables were created for each game by subtracting all of the orange team's stats from the blue team's stats
+-   Team difference variables were created for each game by calculating blue team's stats - orange team's stats
 
--   Additionally, I wanted to investigate whether or not different team play styles were consistently associated with winning/losing. To tackle this task, within each game for each team I calculated the standard deviation for all of the variables in the dataset and subsequently calculated the difference in these standard deviations for the blue team minus the orange team.
+-   Investigating different play styles involved:
 
--   Here's an example of a row of data and a subset of some variables in the dataset that I used:
+    -   Calculating standard deviations per team per game for all variables
+
+    -   Calculating standard deviation differences (blue team - orange team)
+
+-   Example of row of data and some variables in the dataset:
 
     ```{r echo = FALSE, message = FALSE, out.width = "100%", out.height = "200%"}
     library(tidyverse)
@@ -80,132 +84,149 @@ knitr::opts_chunk$set(echo = FALSE)
 
     # rename sd_core_shots_blue_diff
     RL_example_row <- RL_example_row %>% 
-      rename(sd_core_shots_diff = sd_core_shots_blue_diff)
+      rename(sd_shots_diff = sd_core_shots_blue_diff,
+             winner = winner_factor,
+             supersonic_diff = movement_time_supersonic_speed_diff)
+
+    # select only three variables to show from dataset:
+    RL_example_row <- RL_example_row |>
+      select(winner, supersonic_diff, sd_shots_diff)
 
     # pick a row from the dataset
     RL_example_row <- RL_example_row[2, ]
 
     # output an image of this row of data:
-    knitr::include_graphics(here("Images/Dataset_row.png"))
+
+    RL_example_row
+    # image of it: knitr::include_graphics(here("Images/Dataset_row.png"))
     ```
 
 # Methods
 
 -   Built a random forest statistical model
 
-    -   Random forest can be classification or regression but for this project I utilized classification (win or loss)
+    -   Utilized classification approach to predict win/loss
 
--   Utilized cross validation in the model - a resampling method that creates different splits of training and test data to evaluate model performance
+-   Incorporated cross validation in the model - a resampling method that creates different splits of training and test data to evaluate model performance
 
 # What is Random Forest?
 
 ```{r echo = FALSE, message = FALSE, out.width = "100%"}
 library(here)
-knitr::include_graphics(here("Images/Random_Forest_Diagram.png"))
+knitr::include_graphics(here("Images/Canva_RF.png"))
 ## source: https://www.analyticsvidhya.com/blog/2022/07/data-science-interview-series-part-2-random-forest-and-svm/'
 ```
 
 -   After cross-validation, bootstrapping occurs; the set-aside training data is sampled with replacement to create many different simulated samples
 
--   From there, a random subset of variables from the entire dataset (15 variables for each decision tree in my model), are used to create a decision tree that is fit to each of the bootstrapped samples of data
+-   Next, a random subset of variables from the full dataset are used to create a decision tree that is fit to each bootstrapped sample
 
 -   Each decision tree runs independently, and makes a classification prediction (predicted win or loss)
 
--   Then, "voting" happens; whichever result (win or loss) was predicted by the highest number of decision trees becomes the random forest model's final prediction for that game
+-   Whichever result was predicted by the highest number of decision trees is the model's final prediction
+
+-   Here's an example of a single decision tree:
+
+    ```{r morefigs, out.width='90%', echo=FALSE, message = FALSE, fig.height = 4}
+    #fig.cap='Amazing, right?!'
+    library(tidyverse)
+    library(tidymodels)
+    library(tree)
+    library(ggplot2)
+    library(rpart)
+    library(rpart.plot)
+    library(knitr)
+    library(here)
+    library(vip)
+    library(caret)
+    # create a dataset with a subset of variables to make an example tree
+    RL_numeric_tree_example <- RL_numeric |> 
+                      select(c("winner_factor", 
+                               "movement_time_high_air_diff",
+                               "boost_time_zero_boost_diff",
+                               "movement_time_slow_speed_diff",
+                               "positioning_time_defensive_third_diff",
+                               "positioning_time_offensive_half_diff"))
+
+    # fct_relevel to start factor variable at 0 instead of 1
+    RL_numeric_tree_example <- RL_numeric_tree_example |> 
+      mutate(winner_factor = fct_relevel(winner_factor, "0"))
+
+    # plot the example decision tree
+    clean_tree <- rpart(winner_factor ~ ., 
+                        data = RL_numeric_tree_example)
+    rpart.plot(clean_tree)
+    ```
 
 # Decision Tree Example
 
-```{r morefigs, out.width='80%', echo=FALSE, message = FALSE, fig.height = 4}
-#fig.cap='Amazing, right?!'
-library(tidyverse)
-library(tidymodels)
-library(tree)
-library(ggplot2)
-library(rpart)
-library(rpart.plot)
-library(knitr)
-library(here)
-library(vip)
-library(caret)
-RL_joined <- read_csv(here("RL_Datasets/RL_joined.csv"))
-RL_numeric <- read_csv(here("RL_Datasets/RL_numeric.csv"), 
-        col_types = cols(winner_factor = readr::col_factor()))
+-   Let's observe a Rocket League game where boost time zero boost diff = -1 and positioning time offensive half diff = 15
 
-RL_numeric_tree_example <- RL_numeric |> 
-                  select(c("winner_factor", 
-                           "movement_time_high_air_diff",
-                           "boost_time_zero_boost_diff",
-                           "movement_time_slow_speed_diff",
-                           "positioning_time_defensive_third_diff",
-                           "positioning_time_offensive_half_diff"))
-clean_tree <- rpart(winner_factor ~ ., 
-                    data = RL_numeric_tree_example)
-rpart.plot(clean_tree)
-```
+-   Start by observing boost time zero boost diff; -1 is less than 0.8, so it goes down to the right bubble in the bottom row
 
--   As an example following along with the decision tree, let's observe a Rocket League game where boost_time_zero_boost_diff = 3 and positioning_time_offensive_half_diff = 15
-
--   Looking at the tree, you start by observing boost time zero boost diff; 3 is greater than 0.8, so it goes down to the left bubble in the bottom row. At the top of that bubble the number is 0, which indicates a predicted loss for blue team.
+-   At the top of that bubble is the number 1, which indicates a predicted win for blue team
 
 # Results
 
--    Difference in time spent goalside of the ball, difference in shots, difference in the amount of time the balls spent in your own half, and difference in saves proved to be the 4 most important variables in predicting game outcome:
+```{r out.width='80%', echo=FALSE, message = FALSE, fig.height = 4}
 
-    ```{r out.width='80%', echo=FALSE, message = FALSE, fig.height = 4}
-
-    # set a seed
-    set.seed(12)
-    RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.5)
-    RL_train <- training(RL_splits)
-    RL_test <- testing(RL_splits)
-    RL_resamples <- group_vfold_cv(RL_train, v = 5, group = series_id)
+# set a seed
+set.seed(12)
+RL_splits <- group_initial_split(RL_numeric, group = series_id, prop = 0.5)
+RL_train <- training(RL_splits)
+RL_test <- testing(RL_splits)
+RL_resamples <- group_vfold_cv(RL_train, v = 5, group = series_id)
 
 
-    # Preprocess the data for modelling
-    RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>% 
-      step_rm(series_id) %>%
-      step_normalize(all_numeric_predictors()) 
+# Preprocess the data for modelling
+RL_recipe <- recipe(winner_factor ~ ., data = RL_train) %>% 
+  step_rm(series_id) %>%
+  step_normalize(all_numeric_predictors()) 
 
-    # Build a random forest model specification
-    rf_spec <- rand_forest() %>% 
-      set_engine("ranger", importance = "impurity") %>% 
-      set_mode("classification")
+# Build a random forest model specification
+rf_spec <- rand_forest() %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("classification")
 
-    # Bundle recipe and model spec into a workflow
-    rf_wf <- workflow() %>% 
-      add_recipe(RL_recipe) %>% 
-      add_model(rf_spec)
+# Bundle recipe and model spec into a workflow
+rf_wf <- workflow() %>% 
+  add_recipe(RL_recipe) %>% 
+  add_model(rf_spec)
 
-    # Fit a model
-    rf_wf_fit <- rf_wf %>% 
-      fit(data = RL_train)
+# Fit a model
+rf_wf_fit <- rf_wf %>% 
+  fit(data = RL_train)
 
-    # Extract the fitted model from the workflow
-    vip_plot <- rf_wf_fit %>% 
-      extract_fit_parsnip() 
+# Extract the fitted model from the workflow
+vip_plot <- rf_wf_fit %>% 
+  extract_fit_parsnip() 
 
-    # Make VIP plot
-    vip_plot <- vip(vip_plot, num_features = 4) +
-      labs(color = "marital")
+# Make VIP plot
+vip_plot <- vip(vip_plot, num_features = 4) +
+  labs(color = "marital")
 
-    # plot 
-    print(vip_plot)
-    ```
+# plot 
+print(vip_plot)
+
+# potentially add back to conclusion: , and players may already have all of their roles set within each team
+```
 
 -   Two clear strongest predictor variables: difference in positioning time behind the ball and difference in shots
 
--   None of the standard deviation differences proved to be significant predictors
+-   None of the car speed predictors proved to be strong predictors
 
--   Final random forest model predicted Rocket League game outcome with **86.35% accuracy**
+-   No standard deviation differences proved to be strong predictors
+
+-   Final model predicted game outcome with **86.35% accuracy**
 
 # Conclusion
 
--   Based on the two most significant indicators of winning being spending more time behind the ball than your opponent and recording more shots than your opponent, it reinforces the idea that you should be keeping constant pressure on your opponent as the most effective Rocket League strategy
+-   Results reinforce the idea that keeping constant pressure on your opponent is the most effective Rocket League strategy
 
--   Coaches constantly discuss the importance of keeping speed/momentum high throughout games, but, interestingly, variables related to car speed proved to have little to no effect on predicting game outcome
+-   Keeping speed high throughout games may be effective in *reaching* the highest level, but once at the professional level it does not appear to be a significant indicator of game outcome
 
--   Standard deviation difference predictors also proved to not be valuable in predicting game outcome, which means through this model alone we cannot determine whether certain team tactics are more associated with winning games
+-   No significant standard deviation difference predictors means that we cannot definitively determine whether certain team tactics are more associated with winning games
 
-    -   The lack of any association could be because at the highest level of Rocket League, there may not be significant differences in tactical approaches among teams, and players may already have all of their roles set within each team
+    -   At the highest level of Rocket League, there may not be significant differences in tactical approaches among teams
 
     -   With further exploration, certain strategic approaches may still prove to be more effective

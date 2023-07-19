@@ -315,11 +315,18 @@ font-size: 20pt;
 <div id="dataset-and-variables" class="section level1">
 <h1>Dataset and Variables</h1>
 <ul>
-<li><p>Data spans over the course of multiple professional tournaments throughout the 2021-2022 Rocket League Championship Series season (17,484 total games)</p></li>
-<li><p>Team difference variables were created for each game by subtracting all of the orange team’s stats from the blue team’s stats</p></li>
-<li><p>Additionally, I wanted to investigate whether or not different team play styles were consistently associated with winning/losing. To tackle this task, within each game for each team I calculated the standard deviation for all of the variables in the dataset and subsequently calculated the difference in these standard deviations for the blue team minus the orange team.</p></li>
-<li><p>Here’s an example of a row of data and a subset of some variables in the dataset that I used:</p>
-<p><img src="../Images/Dataset_row.png" width="100%" height="200%" /></p></li>
+<li><p>Data spans multiple Rocket League Championship Series tournaments throughout 2021-2022</p></li>
+<li><p>Team difference variables were created for each game by calculating blue team’s stats - orange team’s stats</p></li>
+<li><p>Investigating different play styles involved:</p>
+<ul>
+<li><p>Calculating standard deviations per team per game for all variables</p></li>
+<li><p>Calculating standard deviation differences (blue team - orange team)</p></li>
+</ul></li>
+<li><p>Example of row of data and some variables in the dataset:</p>
+<pre><code>## # A tibble: 1 × 3
+##   winner supersonic_diff sd_shots_diff
+##   &lt;fct&gt;            &lt;dbl&gt;         &lt;dbl&gt;
+## 1 1                -3.37          1.15</code></pre></li>
 </ul>
 </div>
 <div id="methods" class="section level1">
@@ -327,49 +334,49 @@ font-size: 20pt;
 <ul>
 <li><p>Built a random forest statistical model</p>
 <ul>
-<li>Random forest can be classification or regression but for this project I utilized classification (win or loss)</li>
+<li>Utilized classification approach to predict win/loss</li>
 </ul></li>
-<li><p>Utilized cross validation in the model - a resampling method that creates different splits of training and test data to evaluate model performance</p></li>
+<li><p>Incorporated cross validation in the model - a resampling method that creates different splits of training and test data to evaluate model performance</p></li>
 </ul>
 </div>
 <div id="what-is-random-forest" class="section level1">
 <h1>What is Random Forest?</h1>
-<p><img src="../Images/Random_Forest_Diagram.png" width="100%" /></p>
+<p><img src="../Images/Canva_RF.png" width="100%" /></p>
 <ul>
 <li><p>After cross-validation, bootstrapping occurs; the set-aside training data is sampled with replacement to create many different simulated samples</p></li>
-<li><p>From there, a random subset of variables from the entire dataset (15 variables for each decision tree in my model), are used to create a decision tree that is fit to each of the bootstrapped samples of data</p></li>
+<li><p>Next, a random subset of variables from the full dataset are used to create a decision tree that is fit to each bootstrapped sample</p></li>
 <li><p>Each decision tree runs independently, and makes a classification prediction (predicted win or loss)</p></li>
-<li><p>Then, “voting” happens; whichever result (win or loss) was predicted by the highest number of decision trees becomes the random forest model’s final prediction for that game</p></li>
+<li><p>Whichever result was predicted by the highest number of decision trees is the model’s final prediction</p></li>
+<li><p>Here’s an example of a single decision tree:</p>
+<p><img src="Final-Poster_files/figure-html/morefigs-1.png" width="90%" /></p></li>
 </ul>
 </div>
 <div id="decision-tree-example" class="section level1">
 <h1>Decision Tree Example</h1>
-<p><img src="Final-Poster_files/figure-html/morefigs-1.png" width="80%" /></p>
 <ul>
-<li><p>As an example following along with the decision tree, let’s observe a Rocket League game where boost_time_zero_boost_diff = 3 and positioning_time_offensive_half_diff = 15</p></li>
-<li><p>Looking at the tree, you start by observing boost time zero boost diff; 3 is greater than 0.8, so it goes down to the left bubble in the bottom row. At the top of that bubble the number is 0, which indicates a predicted loss for blue team.</p></li>
+<li><p>Let’s observe a Rocket League game where boost time zero boost diff = -1 and positioning time offensive half diff = 15</p></li>
+<li><p>Start by observing boost time zero boost diff; -1 is less than 0.8, so it goes down to the right bubble in the bottom row</p></li>
+<li><p>At the top of that bubble is the number 1, which indicates a predicted win for blue team</p></li>
 </ul>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
-<ul>
-<li>Difference in time spent goalside of the ball, difference in shots, difference in the amount of time the balls spent in your own half, and difference in saves proved to be the 4 most important variables in predicting game outcome:</li>
-</ul>
-<pre><code>&lt;img src=&quot;Final-Poster_files/figure-html/unnamed-chunk-3-1.png&quot; width=&quot;80%&quot; /&gt;</code></pre>
+<p><img src="Final-Poster_files/figure-html/unnamed-chunk-3-1.png" width="80%" /></p>
 <ul>
 <li><p>Two clear strongest predictor variables: difference in positioning time behind the ball and difference in shots</p></li>
-<li><p>None of the standard deviation differences proved to be significant predictors</p></li>
-<li><p>Final random forest model predicted Rocket League game outcome with <strong>86.35% accuracy</strong></p></li>
+<li><p>None of the car speed predictors proved to be strong predictors</p></li>
+<li><p>No standard deviation differences proved to be strong predictors</p></li>
+<li><p>Final model predicted game outcome with <strong>86.35% accuracy</strong></p></li>
 </ul>
 </div>
 <div id="conclusion" class="section level1">
 <h1>Conclusion</h1>
 <ul>
-<li><p>Based on the two most significant indicators of winning being spending more time behind the ball than your opponent and recording more shots than your opponent, it reinforces the idea that you should be keeping constant pressure on your opponent as the most effective Rocket League strategy</p></li>
-<li><p>Coaches constantly discuss the importance of keeping speed/momentum high throughout games, but, interestingly, variables related to car speed proved to have little to no effect on predicting game outcome</p></li>
-<li><p>Standard deviation difference predictors also proved to not be valuable in predicting game outcome, which means through this model alone we cannot determine whether certain team tactics are more associated with winning games</p>
+<li><p>Results reinforce the idea that keeping constant pressure on your opponent is the most effective Rocket League strategy</p></li>
+<li><p>Keeping speed high throughout games may be effective in <em>reaching</em> the highest level, but once at the professional level it does not appear to be a significant indicator of game outcome</p></li>
+<li><p>No significant standard deviation difference predictors means that we cannot definitively determine whether certain team tactics are more associated with winning games</p>
 <ul>
-<li><p>The lack of any association could be because at the highest level of Rocket League, there may not be significant differences in tactical approaches among teams, and players may already have all of their roles set within each team</p></li>
+<li><p>At the highest level of Rocket League, there may not be significant differences in tactical approaches among teams</p></li>
 <li><p>With further exploration, certain strategic approaches may still prove to be more effective</p></li>
 </ul></li>
 </ul>

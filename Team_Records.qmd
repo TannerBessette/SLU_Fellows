@@ -74,8 +74,7 @@ joined_table <- wins_losses_table %>%
   select(team_id, team_name, total_wins, total_losses)
 
 # Here is the final table with team_id, team_name, and total wins and losses
-joined_table
-
+view(joined_table)
 ```
 
 
